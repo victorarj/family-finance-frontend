@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const client = axios.create({ baseURL: "/" });
+const client = axios.create({ baseURL: "/api" });
 
 // request interceptor to add Authorization header if token present
 client.interceptors.request.use((config) => {
