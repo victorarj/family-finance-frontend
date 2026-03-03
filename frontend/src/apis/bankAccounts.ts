@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { BankAccount } from "../types";
-
-const client = axios.create({ baseURL: "/api" });
 
 export const list = () => client.get<BankAccount[]>("/bank-accounts/");
 export const create = (data: BankAccount) =>

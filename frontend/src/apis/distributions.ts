@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { Distribution } from "../types";
-
-const client = axios.create({ baseURL: "/" });
 
 export const list = () => client.get<Distribution[]>("/distributions/");
 export const create = (data: Distribution) =>

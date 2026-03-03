@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { Recipe } from "../types";
-
-const client = axios.create({ baseURL: "/api" });
 
 export const list = () => client.get<Recipe[]>("/recipes/");
 export const create = (data: Recipe) => client.post<Recipe>("/recipes/", data);

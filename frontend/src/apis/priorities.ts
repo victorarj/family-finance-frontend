@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { Priority } from "../types";
-
-const client = axios.create({ baseURL: "/api" });
 
 export const list = () => client.get<Priority[]>("/priorities/");
 export const create = (data: Priority) =>

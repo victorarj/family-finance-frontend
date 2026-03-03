@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { Currency } from "../types";
-
-const client = axios.create({ baseURL: "/" });
 
 export const list = () => client.get<Currency[]>("/currencies/");
 export const create = (data: Currency) =>

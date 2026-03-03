@@ -1,7 +1,5 @@
-import axios from "axios";
+import client from "../utils/apiClient";
 import type { Category } from "../types";
-
-const client = axios.create({ baseURL: "/api" });
 
 export const list = () => client.get<Category[]>("/categories/");
 export const create = (data: Category) =>
