@@ -3,6 +3,8 @@ import { list as listCategories } from "../apis/categories";
 import {
   create as saveBudget,
   list as listBudgets,
+  remove as removeBudget,
+  update as updateBudget,
 } from "../apis/monthlyBudgets";
 import {
   create as createSnapshot,
@@ -23,10 +25,11 @@ import type {
 } from "../types";
 import Button from "../components/Button";
 import Card from "../components/Card";
+import FormField from "../components/FormField";
+import Input from "../components/Input";
 import PlanningLayout from "../components/PlanningLayout";
-
-const inputClass =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary";
+import Select from "../components/Select";
+import TransactionSheet from "../components/TransactionSheet";
 
 function monthNow() {
   return new Date().toISOString().slice(0, 7);
@@ -60,6 +63,9 @@ export default function PlanningPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmSheetOpen, setConfirmSheetOpen] = useState(false);
+  const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
+  const [editingBudgetValue, setEditingBudgetValue] = useState("");
 
   const [budgetForm, setBudgetForm] = useState<BudgetMensal>({
     mes,
@@ -159,13 +165,72 @@ export default function PlanningPage() {
     }
   };
 
-  const onCreateSnapshot = async () => {
+  const createSnapshotWithGuard = async (confirmNegative = false) => {
     setBusy(true);
     try {
-      await createSnapshot({ mes });
+      await createSnapshot({ mes, confirm_negative: confirmNegative });
+      setConfirmSheetOpen(false);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao criar snapshot");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCreateSnapshot = async () => {
+    const projectedBalance = projection
+      ? toNumber(projection.projected_balance)
+      : null;
+    if (projectedBalance !== null && projectedBalance <= 0) {
+      setConfirmSheetOpen(true);
+      return;
+    }
+    await createSnapshotWithGuard(false);
+  };
+
+  const startBudgetEdit = (budget: BudgetMensal) => {
+    if (!budget.id) return;
+    setEditingBudgetId(budget.id);
+    setEditingBudgetValue(String(Number(budget.valor_planejado)));
+  };
+
+  const cancelBudgetEdit = () => {
+    setEditingBudgetId(null);
+    setEditingBudgetValue("");
+  };
+
+  const onUpdateBudget = async () => {
+    if (!editingBudgetId) return;
+    setBusy(true);
+    try {
+      await updateBudget(editingBudgetId, {
+        valor_planejado: Number(editingBudgetValue),
+      });
+      cancelBudgetEdit();
+      await reload();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao atualizar orçamento",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDeleteBudget = async (budget: BudgetMensal) => {
+    if (!budget.id || !window.confirm("Excluir orçamento?")) return;
+    setBusy(true);
+    try {
+      await removeBudget(budget.id);
+      if (editingBudgetId === budget.id) {
+        cancelBudgetEdit();
+      }
+      await reload();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao excluir orçamento",
+      );
     } finally {
       setBusy(false);
     }
@@ -217,15 +282,13 @@ export default function PlanningPage() {
               Defina o mês de referência para carregar status, projeção,
               orçamentos e snapshots.
             </p>
-            <label className="block max-w-52 space-y-1 text-sm">
-              <span className="text-muted-foreground">Mês de referência</span>
-              <input
-                className={inputClass}
+            <FormField label="Mês de referência" className="max-w-52">
+              <Input
                 type="month"
                 value={mes}
                 onChange={(e) => setMes(e.target.value)}
               />
-            </label>
+            </FormField>
             <div className="rounded-md bg-surface px-3 py-2 text-sm">
               Status atual: <strong>{status}</strong>
             </div>
@@ -243,8 +306,7 @@ export default function PlanningPage() {
               className="grid grid-cols-1 gap-2 sm:grid-cols-4"
               onSubmit={onCreateRecurring}
             >
-              <select
-                className={inputClass}
+              <Select
                 value={recurringForm.tipo}
                 onChange={(e) =>
                   setRecurringForm((prev) => ({
@@ -255,9 +317,8 @@ export default function PlanningPage() {
               >
                 <option value="expense">Despesa</option>
                 <option value="income">Receita</option>
-              </select>
-              <input
-                className={inputClass}
+              </Select>
+              <Input
                 type="text"
                 value={recurringForm.descricao}
                 onChange={(e) =>
@@ -269,8 +330,7 @@ export default function PlanningPage() {
                 placeholder="Descrição"
                 required
               />
-              <input
-                className={inputClass}
+              <Input
                 type="number"
                 step="0.01"
                 value={recurringForm.valor}
@@ -316,8 +376,7 @@ export default function PlanningPage() {
               className="grid grid-cols-1 gap-2 sm:grid-cols-3"
               onSubmit={onCreateBudget}
             >
-              <select
-                className={inputClass}
+              <Select
                 value={budgetForm.categoria_id}
                 onChange={(e) =>
                   setBudgetForm((prev) => ({
@@ -333,9 +392,8 @@ export default function PlanningPage() {
                     {category.nome}
                   </option>
                 ))}
-              </select>
-              <input
-                className={inputClass}
+              </Select>
+              <Input
                 type="number"
                 step="0.01"
                 value={budgetForm.valor_planejado}
@@ -356,11 +414,73 @@ export default function PlanningPage() {
             <ul className="space-y-2 text-sm text-foreground">
               {budgets.map((budget) => (
                 <li
-                  className="rounded-md bg-surface px-3 py-2"
+                  className="space-y-2 rounded-md bg-surface px-3 py-2"
                   key={budget.id || `${budget.mes}-${budget.categoria_id}`}
                 >
-                  Categoria {budget.categoria_id}: R${" "}
-                  {Number(budget.valor_planejado).toFixed(2)}
+                  <p className="text-muted-foreground">
+                    Categoria:{" "}
+                    {categories.find((c) => c.id === budget.categoria_id)?.nome ||
+                      `#${budget.categoria_id}`}
+                  </p>
+                  {editingBudgetId === budget.id ? (
+                    <div className="space-y-2">
+                      <FormField label="Valor planejado">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editingBudgetValue}
+                          onChange={(e) => setEditingBudgetValue(e.target.value)}
+                          disabled={busy}
+                        />
+                      </FormField>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => void onUpdateBudget()}
+                        >
+                          Salvar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={busy}
+                          onClick={cancelBudgetEdit}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-foreground">
+                        R$ {Number(budget.valor_planejado).toFixed(2)}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy || !budget.id}
+                          onClick={() => startBudgetEdit(budget)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-expense hover:bg-expense-soft"
+                          disabled={busy || !budget.id}
+                          onClick={() => void onDeleteBudget(budget)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
               {budgets.length === 0 && (
@@ -440,6 +560,37 @@ export default function PlanningPage() {
             >
               Confirmar planejamento e criar snapshot
             </Button>
+            <TransactionSheet
+              open={confirmSheetOpen}
+              onOpenChange={setConfirmSheetOpen}
+              title="Confirmar saldo não positivo"
+              description="Your projected balance is negative or zero. Are you sure you want to confirm planning?"
+            >
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Este mês será fechado com saldo projetado não positivo.
+                  Confirme apenas se deseja realmente concluir o planejamento.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={busy}
+                    onClick={() => void createSnapshotWithGuard(true)}
+                  >
+                    {busy ? "Confirmando..." : "Confirmar mesmo assim"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={busy}
+                    onClick={() => setConfirmSheetOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </TransactionSheet>
 
             <div className="space-y-2">
               <h4 className="text-sm font-semibold">Snapshots do mês</h4>

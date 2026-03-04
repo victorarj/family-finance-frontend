@@ -5,6 +5,10 @@ import { create, update } from "../apis/expenses";
 import { list as listPriorities } from "../apis/priorities";
 import type { BankAccount, Category, Expense, Priority } from "../types";
 import Button from "./Button";
+import FormField from "./FormField";
+import Input from "./Input";
+import Select from "./Select";
+import TextArea from "./TextArea";
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -12,9 +16,6 @@ interface ExpenseFormProps {
   onSaved: (expense: Expense) => void;
   onCancel: () => void;
 }
-
-const inputClass =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary";
 
 const initialExpense = (ownerEmail: string): Expense => ({
   nome: "",
@@ -115,22 +116,18 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
     <form className="space-y-3" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
 
-      <label className="block space-y-1 text-sm">
-        <span className="text-muted-foreground">Nome da despesa</span>
-        <input
-          className={inputClass}
+      <FormField label="Nome da despesa" required>
+        <Input
           type="text"
           value={form.nome}
           onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
           required
           disabled={loading}
         />
-      </label>
+      </FormField>
 
-      <label className="block space-y-1 text-sm">
-        <span className="text-muted-foreground">Categoria</span>
-        <select
-          className={inputClass}
+      <FormField label="Categoria" required>
+        <Select
           value={form.categoria_id}
           onChange={(e) => setForm((prev) => ({ ...prev, categoria_id: Number(e.target.value) }))}
           required
@@ -142,14 +139,12 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
               {cat.nome}
             </option>
           ))}
-        </select>
-      </label>
+        </Select>
+      </FormField>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Valor</span>
-          <input
-            className={inputClass}
+        <FormField label="Valor" required>
+          <Input
             type="number"
             step="0.01"
             value={form.valor_total}
@@ -157,14 +152,12 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             required
             disabled={loading}
           />
-        </label>
+        </FormField>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Data de início (dd/mm/yyyy)</span>
-          <input
-            className={inputClass}
+        <FormField label="Data de início (dd/mm/yyyy)" required>
+          <Input
             type="date"
             lang="pt-PT"
             value={form.data_inicio}
@@ -172,11 +165,9 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             required
             disabled={loading}
           />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Data de fim (dd/mm/yyyy)</span>
-          <input
-            className={inputClass}
+        </FormField>
+        <FormField label="Data de fim (dd/mm/yyyy)" required>
+          <Input
             type="date"
             lang="pt-PT"
             value={form.data_fim}
@@ -184,7 +175,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             required
             disabled={loading}
           />
-        </label>
+        </FormField>
       </div>
 
       <button
@@ -199,10 +190,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       {showAdvanced && (
         <div className="space-y-3 rounded-md border border-border bg-surface p-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Número de parcelas</span>
-              <input
-                className={inputClass}
+            <FormField label="Número de parcelas" required>
+              <Input
                 type="number"
                 min={1}
                 value={form.numero_parcelas}
@@ -210,11 +199,9 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                 required
                 disabled={loading}
               />
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Frequência</span>
-              <select
-                className={inputClass}
+            </FormField>
+            <FormField label="Frequência">
+              <Select
                 value={form.frequencia_pagamento || "mensal"}
                 onChange={(e) =>
                   setForm((prev) => ({
@@ -227,27 +214,24 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                 <option value="mensal">Mensal</option>
                 <option value="semanal">Semanal</option>
                 <option value="anual">Anual</option>
-              </select>
-            </label>
+              </Select>
+            </FormField>
           </div>
 
-          <label className="block space-y-1 text-sm">
-            <span className="text-muted-foreground">Valor mensal (calculado)</span>
-            <input
-              className={`${inputClass} bg-muted`}
+          <FormField label="Valor mensal (calculado)">
+            <Input
+              className="bg-muted"
               type="number"
               step="0.01"
               value={derivedMonthlyValue}
               readOnly
               disabled
             />
-          </label>
+          </FormField>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Prioridade</span>
-              <select
-                className={inputClass}
+            <FormField label="Prioridade" required>
+              <Select
                 value={form.prioridade_id}
                 onChange={(e) => setForm((prev) => ({ ...prev, prioridade_id: Number(e.target.value) }))}
                 required
@@ -259,14 +243,12 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                     {priority.nome}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </FormField>
 
             <div className="space-y-2 rounded-md border border-border bg-background px-3 py-2">
-              <label className="block space-y-1 text-sm">
-                <span className="text-muted-foreground">Conta bancária</span>
-                <select
-                  className={inputClass}
+              <FormField label="Conta bancária" required>
+                <Select
                   value={form.conta_bancaria_id}
                   onChange={(e) => setForm((prev) => ({ ...prev, conta_bancaria_id: Number(e.target.value) }))}
                   required
@@ -278,8 +260,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                       {account.nome_conta}
                     </option>
                   ))}
-                </select>
-              </label>
+                </Select>
+              </FormField>
               <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
@@ -294,10 +276,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Moeda</span>
-              <input
-                className={inputClass}
+            <FormField label="Moeda" required>
+              <Input
                 type="text"
                 maxLength={3}
                 value={form.moeda}
@@ -305,32 +285,29 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                 required
                 disabled={loading}
               />
-            </label>
+            </FormField>
 
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Tipo de despesa</span>
-              <select
-                className={inputClass}
+            <FormField label="Tipo de despesa">
+              <Select
                 value={form.tipo_despesa || "fixa"}
                 onChange={(e) => setForm((prev) => ({ ...prev, tipo_despesa: e.target.value }))}
                 disabled={loading}
               >
                 <option value="fixa">Fixa</option>
                 <option value="variavel">Variável</option>
-              </select>
-            </label>
+              </Select>
+            </FormField>
           </div>
 
-          <label className="block space-y-1 text-sm">
-            <span className="text-muted-foreground">Descrição</span>
-            <textarea
-              className={`${inputClass} min-h-[3.5rem]`}
+          <FormField label="Descrição">
+            <TextArea
+              className="min-h-[3.5rem]"
               rows={2}
               value={form.descricao || ""}
               onChange={(e) => setForm((prev) => ({ ...prev, descricao: e.target.value }))}
               disabled={loading}
             />
-          </label>
+          </FormField>
         </div>
       )}
 

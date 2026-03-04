@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { create, update } from "../apis/income";
 import type { Income } from "../types";
 import Button from "./Button";
+import FormField from "./FormField";
+import Input from "./Input";
+import TextArea from "./TextArea";
 
 interface IncomeFormProps {
   income?: Income | null;
@@ -9,9 +12,6 @@ interface IncomeFormProps {
   onSaved: (income: Income) => void;
   onCancel: () => void;
 }
-
-const inputClass =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary";
 
 const initialIncome = (ownerEmail: string): Income => ({
   nome: "",
@@ -69,23 +69,19 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
     <form className="space-y-3" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
 
-      <label className="block space-y-1 text-sm">
-        <span className="text-muted-foreground">Nome da receita</span>
-        <input
-          className={inputClass}
+      <FormField label="Nome da receita" required>
+        <Input
           type="text"
           value={form.nome}
           onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
           required
           disabled={loading}
         />
-      </label>
+      </FormField>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Valor</span>
-          <input
-            className={inputClass}
+        <FormField label="Valor" required>
+          <Input
             type="number"
             step="0.01"
             value={form.valor}
@@ -93,11 +89,9 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
             required
             disabled={loading}
           />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Data de recebimento (dd/mm/yyyy)</span>
-          <input
-            className={inputClass}
+        </FormField>
+        <FormField label="Data de recebimento (dd/mm/yyyy)" required>
+          <Input
             type="date"
             lang="pt-PT"
             value={form.data_recebimento}
@@ -105,33 +99,30 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
             required
             disabled={loading}
           />
-        </label>
+        </FormField>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="block space-y-1 text-sm">
-          <span className="text-muted-foreground">Moeda</span>
-          <input
-            className={inputClass}
+        <FormField label="Moeda">
+          <Input
             type="text"
             maxLength={3}
             value={form.moeda}
             onChange={(e) => setForm((prev) => ({ ...prev, moeda: e.target.value }))}
             disabled={loading}
           />
-        </label>
+        </FormField>
       </div>
 
-      <label className="block space-y-1 text-sm">
-        <span className="text-muted-foreground">Descrição</span>
-        <textarea
-          className={`${inputClass} min-h-[3.5rem]`}
+      <FormField label="Descrição">
+        <TextArea
+          className="min-h-[3.5rem]"
           rows={2}
           value={form.descricao || ""}
           onChange={(e) => setForm((prev) => ({ ...prev, descricao: e.target.value }))}
           disabled={loading}
         />
-      </label>
+      </FormField>
 
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={loading}>

@@ -4,9 +4,8 @@ import { useAuth } from "../auth/AuthContext";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Container from "../components/Container";
-
-const inputClass =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-ring";
+import FormField from "../components/FormField";
+import Input from "../components/Input";
 
 export default function RegisterPage() {
   const [nome, setNome] = useState("");
@@ -40,31 +39,26 @@ export default function RegisterPage() {
           </div>
 
           <form className="space-y-3" onSubmit={handleSubmit}>
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Nome</span>
-              <input className={inputClass} value={nome} onChange={(e) => setNome(e.target.value)} required />
-            </label>
+            <FormField label="Nome" required>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} required />
+            </FormField>
 
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Email</span>
-              <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </label>
+            <FormField label="Email" required>
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </FormField>
 
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Senha</span>
-              <input
-                className={inputClass}
+            <FormField label="Senha" required>
+              <Input
                 type="password"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 required
               />
-            </label>
+            </FormField>
 
-            <label className="block space-y-1 text-sm">
-              <span className="text-muted-foreground">Telefone</span>
-              <input className={inputClass} value={telefone} onChange={(e) => setTelefone(e.target.value)} />
-            </label>
+            <FormField label="Telefone">
+              <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+            </FormField>
 
             {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
 
