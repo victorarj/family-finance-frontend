@@ -1,126 +1,169 @@
 import { useEffect, useState } from "react";
-import { list as listExpenses } from "../apis/expenses";
-import { list as listIncomes } from "../apis/income";
-import type { DashboardSummary, Expense, Income } from "../types";
+import { getOverview } from "../apis/dashboard";
+import type { DashboardOverview } from "../types";
+import Card from "./Card";
+import Container from "./Container";
+
+function monthNow() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+type MetricCardProps = {
+  title: string;
+  value: string;
+  tone?: "income" | "expense" | "default";
+};
+
+function MetricCard({ title, value, tone = "default" }: MetricCardProps) {
+  const toneClass = tone === "income" ? "text-income" : tone === "expense" ? "text-expense" : "text-foreground";
+  return (
+    <Card className="space-y-2">
+      <h3 className="text-sm text-muted-foreground">{title}</h3>
+      <p className={`text-3xl font-display ${toneClass}`}>{value}</p>
+    </Card>
+  );
+}
+
+type PlannedActualBlockProps = {
+  planned: number | null;
+  actual: number | null;
+  variance: number | null;
+};
+
+function PlannedActualBlock({ planned, actual, variance }: PlannedActualBlockProps) {
+  const varianceTone = variance == null ? "text-foreground" : variance >= 0 ? "text-income" : "text-expense";
+  return (
+    <Card className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
+        <span className="rounded-md bg-secondary px-2 py-1 text-xs text-muted-foreground">Em preparação</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 text-sm">
+        <div className="rounded-md bg-surface px-3 py-2">
+          <p className="text-xs text-muted-foreground">Planejado</p>
+          <p className="font-display text-lg text-foreground">
+            {planned == null ? "—" : `R$ ${planned.toFixed(2)}`}
+          </p>
+        </div>
+        <div className="rounded-md bg-surface px-3 py-2">
+          <p className="text-xs text-muted-foreground">Realizado</p>
+          <p className="font-display text-lg text-foreground">
+            {actual == null ? "—" : `R$ ${actual.toFixed(2)}`}
+          </p>
+        </div>
+        <div className="rounded-md bg-surface px-3 py-2">
+          <p className="text-xs text-muted-foreground">Variação</p>
+          <p className={`font-display text-lg ${varianceTone}`}>
+            {variance == null ? "—" : `R$ ${variance.toFixed(2)}`}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function statusBadgeClasses(status: DashboardOverview["month_status"]) {
+  if (status === "COMPLETED") {
+    return "bg-income-soft text-income";
+  }
+  if (status === "IN_PROGRESS") {
+    return "bg-warning-soft text-warning";
+  }
+  return "bg-muted text-muted-foreground";
+}
 
 export default function Dashboard() {
-  const [summary, setSummary] = useState<DashboardSummary>({
-    totalExpenses: 0,
-    totalIncome: 0,
-    expenseCount: 0,
-    incomeCount: 0,
-    categoryCount: 0,
-    balance: 0,
-  });
+  const [month, setMonth] = useState(monthNow());
+  const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch expenses and income in parallel
-        const [expensesRes, incomesRes] = await Promise.all([
-          listExpenses(),
-          listIncomes(),
-        ]);
-
-        const expenses: Expense[] = expensesRes.data;
-        const incomes: Income[] = incomesRes.data;
-
-        // Calculate totals
-        const totalExpenses = Array.isArray(expenses)
-          ? expenses.reduce(
-              (sum, exp) => sum + (parseFloat(String(exp.valor_total)) || 0),
-              0,
-            )
-          : 0;
-
-        const totalIncome = Array.isArray(incomes)
-          ? incomes.reduce(
-              (sum, inc) => sum + (parseFloat(String(inc.valor)) || 0),
-              0,
-            )
-          : 0;
-
-        setSummary({
-          totalExpenses,
-          totalIncome,
-          expenseCount: Array.isArray(expenses) ? expenses.length : 0,
-          incomeCount: Array.isArray(incomes) ? incomes.length : 0,
-          categoryCount: 0,
-          balance: totalIncome - totalExpenses,
-        });
-        setLoading(false);
+        setLoading(true);
+        const response = await getOverview(month);
+        setOverview(response.data);
+        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
+        setError(err instanceof Error ? err.message : "Falha ao carregar dados");
+      } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [month]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div>
-        <h1>Dashboard</h1>
-        <p>Carregando...</p>
-      </div>
+      <Container>
+        <Card>
+          <h2 className="text-lg">Dashboard</h2>
+          <p className="mt-2 text-muted-foreground">Carregando...</p>
+        </Card>
+      </Container>
     );
-  if (error)
+  }
+
+  if (error || !overview) {
     return (
-      <div>
-        <h1>Dashboard</h1>
-        <p style={{ color: "red" }}>Erro: {error}</p>
-      </div>
+      <Container>
+        <Card>
+          <h2 className="text-lg">Dashboard</h2>
+          <p className="mt-2 text-expense">Erro: {error || "Sem dados"}</p>
+        </Card>
+      </Container>
     );
+  }
+
+  // const availableToSpend = overview.projection;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Dashboard Financeiro</h1>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "20px",
-        }}
-      >
-        <div style={{ border: "1px solid #ccc", padding: "15px" }}>
-          <h3>Total de Receitas</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold", color: "green" }}>
-            R$ {summary.totalIncome.toFixed(2)}
-          </p>
-          <p style={{ fontSize: "14px", color: "#666" }}>
-            {summary.incomeCount} receitas
-          </p>
+    <Container>
+      <section className="space-y-4">
+        <Card>
+          <h2 className="text-xl">Dashboard Financeiro</h2>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+              Mês
+              <input
+                className="rounded-md border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              />
+            </label>
+            <span className={`rounded-md px-3 py-2 text-sm font-medium ${statusBadgeClasses(overview.month_status)}`}>
+              Status: {overview.month_status}
+            </span>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <MetricCard title="Receitas (MTD)" value={`R$ ${overview.income_mtd.toFixed(2)}`} tone="income" />
+          <MetricCard title="Despesas (MTD)" value={`R$ ${overview.expenses_mtd.toFixed(2)}`} tone="expense" />
+          <MetricCard
+            title="Saldo"
+            value={`R$ ${overview.balance.toFixed(2)}`}
+            tone={overview.balance >= 0 ? "income" : "expense"}
+          />
+          <MetricCard
+            title="Projeção"
+            value={`R$ ${overview.projection.toFixed(2)}`}
+            tone={overview.projection >= 0 ? "income" : "expense"}
+          />
+          {/*
+          <MetricCard
+            title="Saldo disponível"
+            value={`R$ ${availableToSpend.toFixed(2)}`}
+            tone={availableToSpend >= 0 ? "income" : "expense"}
+          />
+          */}
         </div>
 
-        <div style={{ border: "1px solid #ccc", padding: "15px" }}>
-          <h3>Total de Despesas</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold", color: "red" }}>
-            R$ {summary.totalExpenses.toFixed(2)}
-          </p>
-          <p style={{ fontSize: "14px", color: "#666" }}>
-            {summary.expenseCount} despesas
-          </p>
-        </div>
-
-        <div style={{ border: "1px solid #ccc", padding: "15px" }}>
-          <h3>Saldo</h3>
-          <p
-            style={{
-              fontSize: "24px",
-              fontWeight: "bold",
-              color: summary.balance >= 0 ? "green" : "red",
-            }}
-          >
-            R$ {summary.balance.toFixed(2)}
-          </p>
-          <p style={{ fontSize: "14px", color: "#666" }}>
-            {summary.balance >= 0 ? "Superávit" : "Déficit"}
-          </p>
-        </div>
-      </div>
-    </div>
+        <PlannedActualBlock planned={null} actual={null} variance={null} />
+      </section>
+    </Container>
   );
 }

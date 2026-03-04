@@ -1,152 +1,97 @@
 import { useEffect, useState } from "react";
 import { list, remove } from "../apis/income";
 import type { Income } from "../types";
+import Button from "./Button";
+import Card from "./Card";
 
 interface IncomeListProps {
   onEdit: (income: Income) => void;
   refreshTrigger?: number;
 }
 
-export default function IncomeList({
-  onEdit,
-  refreshTrigger,
-}: IncomeListProps) {
-  const [incomes, setIncomes] = useState<Income[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function IncomeList({ onEdit, refreshTrigger }: IncomeListProps) {
+  const [items, setItems] = useState<Income[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchIncomes = async () => {
+      try {
+        setLoading(true);
+        const response = await list();
+        setItems(Array.isArray(response.data) ? response.data : []);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Falha ao carregar receitas");
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchIncomes();
   }, [refreshTrigger]);
 
-  const fetchIncomes = async () => {
-    try {
-      setLoading(true);
-      const data = await list();
-      setIncomes(Array.isArray(data.data) ? data.data : []);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load income");
-      setIncomes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: number | undefined) => {
+  const handleDelete = async (id: number | undefined, locked?: boolean) => {
     if (!id || !window.confirm("Deletar receita?")) return;
+    if (locked) {
+      setError("Mês fechado por snapshot: exclusão bloqueada.");
+      return;
+    }
 
     try {
       await remove(id);
-      setIncomes(incomes.filter((r) => r.id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      alert(`Erro: ${err instanceof Error ? err.message : "Failed to delete"}`);
+      setError(err instanceof Error ? err.message : "Falha ao excluir receita");
     }
   };
 
-  if (loading) return <p>Carregando receitas...</p>;
-  if (error)
-    return (
-      <div style={{ color: "red" }}>
-        <p>Erro: {error}</p>
-        <button onClick={fetchIncomes}>Tentar Novamente</button>
-      </div>
-    );
+  if (loading) return <p className="text-sm text-muted-foreground">Carregando receitas...</p>;
+
+  if (error) {
+    return <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>;
+  }
+
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">Nenhuma receita cadastrada.</p>;
+  }
 
   return (
-    <div>
-      {incomes.length === 0 ? (
-        <p>Nenhuma receita cadastrada. Adicione uma!</p>
-      ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "10px",
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#f5f5f5" }}>
-              <th
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                }}
-              >
-                Nome
-              </th>
-              <th
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                }}
-              >
-                Valor
-              </th>
-              <th
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                }}
-              >
-                Data de Recebimento
-              </th>
-              <th
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "center",
-                  width: "150px",
-                }}
-              >
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {incomes.map((income) => (
-              <tr key={income.id}>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  {income.nome}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  {income.valor} {income.moeda}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  {income.data_recebimento}
-                </td>
-                <td
-                  style={{
-                    border: "1px solid #ddd",
-                    padding: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <button
-                    onClick={() => onEdit(income)}
-                    style={{ padding: "4px 8px", marginRight: "4px" }}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(income.id)}
-                    style={{
-                      padding: "4px 8px",
-                      backgroundColor: "#ff6b6b",
-                      color: "white",
-                    }}
-                  >
-                    Deletar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-3">
+      {items.map((income) => (
+        <Card key={income.id} className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-medium text-foreground">{income.nome}</p>
+              <p className="text-sm text-muted-foreground">{income.data_recebimento}</p>
+            </div>
+            {income.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
+          </div>
+
+          <div className="rounded-md bg-surface px-3 py-2 text-sm">
+            <p className="text-muted-foreground">Valor</p>
+            <p className="font-semibold text-income">
+              {income.valor} {income.moeda}
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={income.locked} onClick={() => onEdit(income)}>
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-expense hover:bg-expense-soft"
+              size="sm"
+              disabled={income.locked}
+              onClick={() => handleDelete(income.id, income.locked)}
+            >
+              Deletar
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

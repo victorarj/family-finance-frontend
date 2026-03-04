@@ -1,68 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  --background: 40 20% 97%;
+  --foreground: 220 20% 14%;
+  --card: 0 0% 100%;
+  --surface: 40 15% 96%;
+  --surface-elevated: 0 0% 100%;
+  --primary: 160 45% 40%;
+  --secondary: 40 15% 93%;
+  --muted: 40 10% 92%;
+  --muted-foreground: 220 10% 50%;
+  --border: 220 15% 90%;
+  --ring: 160 45% 40%;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  --income: 160 50% 42%;
+  --income-soft: 160 40% 94%;
+  --expense: 8 70% 58%;
+  --expense-soft: 8 60% 95%;
+  --warning: 40 90% 55%;
+  --warning-soft: 40 80% 94%;
+  --info: 210 80% 55%;
+  --info-soft: 210 60% 94%;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  --shadow-card: 0 1px 2px hsl(220 15% 15% / 0.06);
+  --shadow-elevated: 0 4px 12px hsl(220 15% 15% / 0.1);
+  --shadow-fab: 0 10px 24px hsl(var(--primary) / 0.2);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.dark {
+  --background: 220 20% 8%;
+  --foreground: 220 10% 92%;
+  --card: 220 15% 12%;
+  --surface: 220 14% 10%;
+  --surface-elevated: 220 15% 12%;
+  --primary: 160 45% 45%;
+  --secondary: 220 12% 16%;
+  --muted: 220 10% 18%;
+  --muted-foreground: 220 10% 70%;
+  --border: 220 12% 24%;
+  --ring: 160 45% 45%;
+
+  --income: 160 52% 52%;
+  --income-soft: 160 35% 20%;
+  --expense: 8 75% 64%;
+  --expense-soft: 8 35% 20%;
+  --warning: 40 92% 60%;
+  --warning-soft: 40 35% 22%;
+  --info: 210 85% 62%;
+  --info-soft: 210 35% 22%;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  body {
+    @apply bg-background font-body text-foreground;
   }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
   }
 }

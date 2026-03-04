@@ -1,51 +1,76 @@
 import { useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { useNavigate, useLocation, Link, Navigate } from "react-router-dom";
+import Button from "../components/Button";
+import Card from "../components/Card";
+import Container from "../components/Container";
+
+const inputClass =
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-ring";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [error, setError] = useState<string | null>(null);
+
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || "/";
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/";
 
-  if (auth.token) {
-    // already logged in
-    return <Navigate to={from} replace />;
-  }
+  if (auth.token) return <Navigate to={from} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await auth.login(email, senha);
       navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha no login");
     }
   };
 
   return (
-    <div>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Email: <input value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
-        </div>
-        <div>
-          <label>
-            Senha: <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
-          </label>
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Entrar</button>
-      </form>
-      <p>
-        Não tem conta? <Link to="/register">Registre-se</Link>
-      </p>
-    </div>
+    <Container>
+      <div className="pt-10">
+        <Card className="space-y-4">
+          <div>
+            <h2 className="text-2xl">Entrar</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Acesse sua rotina financeira.</p>
+          </div>
+
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Email</span>
+              <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Senha</span>
+              <input
+                className={inputClass}
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                required
+              />
+            </label>
+
+            {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
+
+            <Button className="w-full" type="submit">
+              Entrar
+            </Button>
+          </form>
+
+          <p className="text-sm text-muted-foreground">
+            Não tem conta?{" "}
+            <Link className="text-primary hover:underline" to="/register">
+              Registre-se
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </Container>
   );
 }

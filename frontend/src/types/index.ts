@@ -24,6 +24,7 @@ export interface Expense {
   frequencia_pagamento?: "mensal" | "anual" | "semanal";
   descricao?: string;
   tipo_despesa?: string;
+  locked?: boolean;
 }
 
 // Income (Receita)
@@ -35,6 +36,7 @@ export interface Income {
   data_recebimento: string;
   descricao?: string;
   moeda: string;
+  locked?: boolean;
 }
 
 // Recipe (Legacy - for cooking recipes if needed)
@@ -109,4 +111,68 @@ export interface DashboardSummary {
   incomeCount: number;
   categoryCount: number;
   balance: number;
+  month?: string;
+  projection?: number;
+  month_status?: MonthStatus;
+}
+
+export type MonthStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED";
+
+export interface DashboardOverview {
+  month: string;
+  balance: number;
+  income_mtd: number;
+  expenses_mtd: number;
+  projection: number;
+  month_status: MonthStatus;
+}
+
+export interface UserPreferences {
+  id?: number;
+  tipo_residencia: string;
+  modo_registro: "despesas" | "completo";
+  planejamento_guiado: boolean;
+}
+
+export interface TransacaoRecorrente {
+  id?: number;
+  categoria_id?: number | null;
+  tipo: "income" | "expense";
+  descricao: string;
+  valor: number;
+  frequencia?: "mensal";
+  ativo?: boolean;
+}
+
+export interface BudgetMensal {
+  id?: number;
+  mes: string;
+  categoria_id: number;
+  valor_planejado: number;
+}
+
+export interface SnapshotMensal {
+  id?: number;
+  mes: string;
+  total_receitas: number;
+  total_fixas: number;
+  total_variaveis: number;
+  saldo_projetado: number;
+  created_at?: string;
+}
+
+export interface SurplusAllocation {
+  id?: number;
+  mes: string;
+  tipo_alocacao: string;
+  valor: number;
+}
+
+export interface PlanningProjection {
+  month: string;
+  income: number;
+  expenses_logged: number;
+  fixed_expenses: number;
+  planned_variable: number;
+  projected_balance: number;
 }

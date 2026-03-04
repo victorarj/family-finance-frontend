@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState } from "react";
+import type { ReactNode } from "react";
 import { login as apiLogin, register as apiRegister } from "../apis/auth";
 
 interface AuthContextType {
   token: string | null;
+  userId: number | null;
   userEmail: string | null;
   login: (email: string, senha: string) => Promise<void>;
   register: (data: { nome: string; email: string; senha: string; telefone?: string }) => Promise<void>;
@@ -13,15 +15,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [userId, setUserId] = useState<number | null>(() => {
+    const raw = localStorage.getItem("userId");
+    return raw ? Number(raw) : null;
+  });
   const [userEmail, setUserEmail] = useState<string | null>(() => localStorage.getItem("userEmail"));
 
   const login = async (email: string, senha: string) => {
     const resp = await apiLogin(email, senha);
-    const { token } = resp.data;
+    const { token, userId: responseUserId, email: responseEmail } = resp.data;
     setToken(token);
-    setUserEmail(email);
+    setUserId(responseUserId);
+    setUserEmail(responseEmail || email);
     localStorage.setItem("token", token);
-    localStorage.setItem("userEmail", email);
+    localStorage.setItem("userId", String(responseUserId));
+    localStorage.setItem("userEmail", responseEmail || email);
   };
 
   const register = async (data: { nome: string; email: string; senha: string; telefone?: string }) => {
@@ -30,13 +38,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setToken(null);
+    setUserId(null);
     setUserEmail(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("userId");
     localStorage.removeItem("userEmail");
   };
 
   return (
-    <AuthContext.Provider value={{ token, userEmail, login, register, logout }}>
+    <AuthContext.Provider value={{ token, userId, userEmail, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

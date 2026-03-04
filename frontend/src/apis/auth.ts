@@ -9,6 +9,9 @@ export interface RegisterData {
 
 export interface LoginResponse {
   token: string;
+  userId: number;
+  email: string;
+  nome: string;
 }
 
 export const register = (data: RegisterData) => client.post<void>("/public", data);

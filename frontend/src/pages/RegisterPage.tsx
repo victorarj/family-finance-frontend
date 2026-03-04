@@ -1,6 +1,12 @@
 import { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { useNavigate, Link, Navigate } from "react-router-dom";
+import Button from "../components/Button";
+import Card from "../components/Card";
+import Container from "../components/Container";
+
+const inputClass =
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-ring";
 
 export default function RegisterPage() {
   const [nome, setNome] = useState("");
@@ -8,54 +14,73 @@ export default function RegisterPage() {
   const [senha, setSenha] = useState("");
   const [telefone, setTelefone] = useState("");
   const [error, setError] = useState<string | null>(null);
+
   const auth = useAuth();
   const navigate = useNavigate();
 
-  if (auth.token) {
-    return <Navigate to="/" replace />;
-  }
+  if (auth.token) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await auth.register({ nome, email, senha, telefone });
-      // after registration go to login
       navigate("/login");
-    } catch (err: any) {
-      setError(err.message || "Registration failed");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha no cadastro");
     }
   };
 
   return (
-    <div>
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Nome: <input value={nome} onChange={(e) => setNome(e.target.value)} />
-          </label>
-        </div>
-        <div>
-          <label>
-            Email: <input value={email} onChange={(e) => setEmail(e.target.value)} />
-          </label>
-        </div>
-        <div>
-          <label>
-            Senha: <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
-          </label>
-        </div>
-        <div>
-          <label>
-            Telefone: <input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
-          </label>
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Cadastrar</button>
-      </form>
-      <p>
-        Já tem conta? <Link to="/login">Entrar</Link>
-      </p>
-    </div>
+    <Container>
+      <div className="pt-10">
+        <Card className="space-y-4">
+          <div>
+            <h2 className="text-2xl">Criar conta</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Comece a organizar as finanças da casa.</p>
+          </div>
+
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Nome</span>
+              <input className={inputClass} value={nome} onChange={(e) => setNome(e.target.value)} required />
+            </label>
+
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Email</span>
+              <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Senha</span>
+              <input
+                className={inputClass}
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted-foreground">Telefone</span>
+              <input className={inputClass} value={telefone} onChange={(e) => setTelefone(e.target.value)} />
+            </label>
+
+            {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
+
+            <Button className="w-full" type="submit">
+              Cadastrar
+            </Button>
+          </form>
+
+          <p className="text-sm text-muted-foreground">
+            Já tem conta?{" "}
+            <Link className="text-primary hover:underline" to="/login">
+              Entrar
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </Container>
   );
 }

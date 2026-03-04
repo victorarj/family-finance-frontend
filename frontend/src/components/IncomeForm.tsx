@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { create, update } from "../apis/income";
 import type { Income } from "../types";
+import Button from "./Button";
 
 interface IncomeFormProps {
   income?: Income | null;
@@ -9,36 +10,40 @@ interface IncomeFormProps {
   onCancel: () => void;
 }
 
-export default function IncomeForm({
-  income,
-  currentUserEmail,
-  onSaved,
-  onCancel,
-}: IncomeFormProps) {
-  const [form, setForm] = useState<Income>({
-    nome: "",
-    valor: 0,
-    dono_receita: currentUserEmail,
-    data_recebimento: "",
-    descricao: "",
-    moeda: "BRL",
-  });
+const inputClass =
+  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary";
+
+const initialIncome = (ownerEmail: string): Income => ({
+  nome: "",
+  valor: 0,
+  dono_receita: ownerEmail,
+  data_recebimento: "",
+  descricao: "",
+  moeda: "BRL",
+});
+
+function normalizeDateInputValue(value: unknown): string {
+  if (!value) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const text = String(value);
+  if (text.length >= 10) return text.slice(0, 10);
+  return "";
+}
+
+function normalizeIncome(income: Income): Income {
+  return {
+    ...income,
+    data_recebimento: normalizeDateInputValue(income.data_recebimento),
+  };
+}
+
+export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel }: IncomeFormProps) {
+  const [form, setForm] = useState<Income>(initialIncome(currentUserEmail));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (income) {
-      setForm(income);
-    } else {
-      setForm({
-        nome: "",
-        valor: 0,
-        dono_receita: currentUserEmail,
-        data_recebimento: "",
-        descricao: "",
-        moeda: "BRL",
-      });
-    }
+    setForm(income ? normalizeIncome(income) : initialIncome(currentUserEmail));
   }, [income, currentUserEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,117 +55,92 @@ export default function IncomeForm({
       const action = income ? update(income.id || 0, form) : create(form);
       const res = await action;
       onSaved(res.data);
-      setForm({
-        nome: "",
-        valor: 0,
-        dono_receita: currentUserEmail,
-        data_recebimento: "",
-        descricao: "",
-        moeda: "BRL",
-      });
+      if (!income) {
+        setForm(initialIncome(currentUserEmail));
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save income");
+      setError(err instanceof Error ? err.message : "Falha ao salvar receita");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{ maxWidth: "500px", margin: "10px 0" }}
-    >
-      {error && <p style={{ color: "red" }}>Erro: {error}</p>}
+    <form className="space-y-3" onSubmit={handleSubmit}>
+      {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
 
-      <div style={{ marginBottom: "10px" }}>
-        <label>Nome da Receita:</label>
+      <label className="block space-y-1 text-sm">
+        <span className="text-muted-foreground">Nome da receita</span>
         <input
+          className={inputClass}
           type="text"
-          name="nome"
           value={form.nome}
-          onChange={(e) => setForm({ ...form, nome: e.target.value })}
-          placeholder="Ex: Salário"
+          onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
           required
           disabled={loading}
-          style={{ width: "100%", padding: "5px" }}
         />
+      </label>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted-foreground">Valor</span>
+          <input
+            className={inputClass}
+            type="number"
+            step="0.01"
+            value={form.valor}
+            onChange={(e) => setForm((prev) => ({ ...prev, valor: Number(e.target.value) }))}
+            required
+            disabled={loading}
+          />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted-foreground">Data de recebimento (dd/mm/yyyy)</span>
+          <input
+            className={inputClass}
+            type="date"
+            lang="pt-PT"
+            value={form.data_recebimento}
+            onChange={(e) => setForm((prev) => ({ ...prev, data_recebimento: e.target.value }))}
+            required
+            disabled={loading}
+          />
+        </label>
       </div>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label>Valor:</label>
-        <input
-          type="number"
-          step="0.01"
-          name="valor"
-          value={form.valor}
-          onChange={(e) =>
-            setForm({ ...form, valor: parseFloat(e.target.value) })
-          }
-          placeholder="5000.00"
-          required
-          disabled={loading}
-          style={{ width: "100%", padding: "5px" }}
-        />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label className="block space-y-1 text-sm">
+          <span className="text-muted-foreground">Moeda</span>
+          <input
+            className={inputClass}
+            type="text"
+            maxLength={3}
+            value={form.moeda}
+            onChange={(e) => setForm((prev) => ({ ...prev, moeda: e.target.value }))}
+            disabled={loading}
+          />
+        </label>
       </div>
 
-      <div style={{ marginBottom: "10px" }}>
-        <label>Data de Recebimento:</label>
-        <input
-          type="date"
-          name="data_recebimento"
-          value={form.data_recebimento}
-          onChange={(e) =>
-            setForm({ ...form, data_recebimento: e.target.value })
-          }
-          required
-          disabled={loading}
-          style={{ width: "100%", padding: "5px" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Moeda:</label>
-        <input
-          type="text"
-          name="moeda"
-          value={form.moeda}
-          onChange={(e) => setForm({ ...form, moeda: e.target.value })}
-          placeholder="BRL"
-          maxLength={3}
-          disabled={loading}
-          style={{ width: "100%", padding: "5px" }}
-        />
-      </div>
-
-      <div style={{ marginBottom: "10px" }}>
-        <label>Descrição:</label>
+      <label className="block space-y-1 text-sm">
+        <span className="text-muted-foreground">Descrição</span>
         <textarea
-          name="descricao"
+          className={`${inputClass} min-h-[3.5rem]`}
+          rows={2}
           value={form.descricao || ""}
-          onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-          placeholder="Descrição da receita"
+          onChange={(e) => setForm((prev) => ({ ...prev, descricao: e.target.value }))}
           disabled={loading}
-          style={{ width: "100%", padding: "5px", height: "100px" }}
         />
-      </div>
+      </label>
 
-      <button
-        type="submit"
-        disabled={loading}
-        style={{ padding: "8px 16px", marginRight: "8px" }}
-      >
-        {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"} Receita
-      </button>
-      {onCancel && (
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          style={{ padding: "8px 16px" }}
-        >
+      <div className="flex items-center gap-2">
+        <Button type="submit" disabled={loading}>
+          {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
           Cancelar
-        </button>
-      )}
+        </Button>
+      </div>
     </form>
   );
 }

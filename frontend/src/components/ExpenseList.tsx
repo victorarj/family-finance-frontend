@@ -1,119 +1,107 @@
 import { useEffect, useState } from "react";
 import { list, remove } from "../apis/expenses";
 import type { Expense } from "../types";
+import Button from "./Button";
+import Card from "./Card";
 
 interface ExpenseListProps {
   onEdit: (expense: Expense) => void;
   refreshTrigger?: number;
 }
 
-export default function ExpenseList({
-  onEdit,
-  refreshTrigger,
-}: ExpenseListProps) {
+export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps) {
   const [items, setItems] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchExpenses = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await list();
+        setItems(Array.isArray(response.data) ? response.data : []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Falha ao carregar despesas");
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchExpenses();
   }, [refreshTrigger]);
 
-  const fetchExpenses = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const r = await list();
-      setItems(Array.isArray(r.data) ? r.data : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load expenses");
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: number | undefined) => {
+  const handleDelete = async (id: number | undefined, locked?: boolean) => {
     if (!id || !window.confirm("Deletar despesa?")) return;
+    if (locked) {
+      setError("Mês fechado por snapshot: exclusão bloqueada.");
+      return;
+    }
 
     try {
       await remove(id);
-      setItems(items.filter((i) => i.id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(err instanceof Error ? err.message : "Falha ao excluir despesa");
     }
   };
 
+  if (loading) return <p className="text-sm text-muted-foreground">Carregando despesas...</p>;
+
   if (error) {
-    return (
-      <div style={{ color: "red" }}>
-        <p>{error}</p>
-        <button onClick={fetchExpenses}>Tentar Novamente</button>
-      </div>
-    );
+    return <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>;
   }
 
-  if (loading) {
-    return <p>Carregando despesas...</p>;
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">Nenhuma despesa cadastrada.</p>;
   }
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-      <thead>
-        <tr style={{ backgroundColor: "#f5f5f5" }}>
-          <th style={{ border: "1px solid #ddd", padding: "8px" }}>Nome</th>
-          <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-            Valor Total
-          </th>
-          <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-            Valor Mensal
-          </th>
-          <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-            Data Início
-          </th>
-          <th style={{ border: "1px solid #ddd", padding: "8px" }}>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.length === 0 ? (
-          <tr>
-            <td colSpan={5} style={{ padding: "10px", textAlign: "center" }}>
-              Nenhuma despesa cadastrada
-            </td>
-          </tr>
-        ) : (
-          items.map((x) => (
-            <tr key={x.id}>
-              <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                {x.nome}
-              </td>
-              <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                {x.valor_total} {x.moeda}
-              </td>
-              <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                {x.valor_mensal} {x.moeda}
-              </td>
-              <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                {x.data_inicio}
-              </td>
-              <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                <button
-                  onClick={() => onEdit(x)}
-                  style={{ marginRight: "5px" }}
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(x.id)}
-                  style={{ backgroundColor: "#ff6b6b", color: "white" }}
-                >
-                  Deletar
-                </button>
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+    <div className="space-y-3">
+      {items.map((expense) => (
+        <Card key={expense.id} className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-medium text-foreground">{expense.nome}</p>
+              <p className="text-sm text-muted-foreground">
+                {expense.data_inicio} • {expense.moeda}
+              </p>
+            </div>
+            {expense.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Total</p>
+              <p className="font-semibold text-expense">
+                {expense.valor_total} {expense.moeda}
+              </p>
+            </div>
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Mensal</p>
+              <p className="font-semibold text-expense">
+                {expense.valor_mensal} {expense.moeda}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={expense.locked} onClick={() => onEdit(expense)}>
+              Editar
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-expense hover:bg-expense-soft"
+              size="sm"
+              disabled={expense.locked}
+              onClick={() => handleDelete(expense.id, expense.locked)}
+            >
+              Deletar
+            </Button>
+          </div>
+        </Card>
+      ))}
+    </div>
   );
 }
