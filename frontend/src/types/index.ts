@@ -125,6 +125,11 @@ export interface DashboardOverview {
   expenses_mtd: number;
   projection: number;
   month_status: MonthStatus;
+  planned_income?: number | null;
+  planned_expenses?: number | null;
+  actual_income?: number | null;
+  actual_expenses?: number | null;
+  planned_vs_actual_diff?: number | null;
 }
 
 export interface UserPreferences {
@@ -159,6 +164,16 @@ export interface SnapshotMensal {
   total_variaveis: number;
   saldo_projetado: number;
   created_at?: string;
+}
+
+export interface SnapshotDetails {
+  snapshot: SnapshotMensal;
+  planned_income: number;
+  planned_expenses: number;
+  projected_balance: number;
+  actual_income: number;
+  actual_expenses: number;
+  planned_vs_actual_diff: number;
 }
 
 export interface SurplusAllocation {

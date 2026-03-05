@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { list as listCategories } from "../apis/categories";
 import {
   create as saveBudget,
@@ -14,6 +15,8 @@ import { getProjection, getStatus } from "../apis/planning";
 import {
   create as saveRecurring,
   list as listRecurring,
+  remove as removeRecurring,
+  update as updateRecurring,
 } from "../apis/recurring";
 import type {
   BudgetMensal,
@@ -52,7 +55,17 @@ const STEPS = [
   "Confirmar",
 ] as const;
 
+function emptyRecurringForm(): TransacaoRecorrente {
+  return {
+    tipo: "expense",
+    descricao: "",
+    valor: 0,
+    frequencia: "mensal",
+  };
+}
+
 export default function PlanningPage() {
+  const navigate = useNavigate();
   const [mes, setMes] = useState(monthNow());
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<MonthStatus>("NOT_STARTED");
@@ -66,6 +79,9 @@ export default function PlanningPage() {
   const [confirmSheetOpen, setConfirmSheetOpen] = useState(false);
   const [editingBudgetId, setEditingBudgetId] = useState<number | null>(null);
   const [editingBudgetValue, setEditingBudgetValue] = useState("");
+  const [editingRecurringId, setEditingRecurringId] = useState<number | null>(
+    null,
+  );
 
   const [budgetForm, setBudgetForm] = useState<BudgetMensal>({
     mes,
@@ -73,12 +89,14 @@ export default function PlanningPage() {
     valor_planejado: 0,
   });
 
-  const [recurringForm, setRecurringForm] = useState<TransacaoRecorrente>({
-    tipo: "expense",
-    descricao: "",
-    valor: 0,
-    frequencia: "mensal",
-  });
+  const [recurringForm, setRecurringForm] = useState<TransacaoRecorrente>(
+    emptyRecurringForm(),
+  );
+
+  const activeRecurring = useMemo(
+    () => recurring.filter((item) => item.ativo !== false),
+    [recurring],
+  );
 
   const canGoNext = step < STEPS.length - 1;
   const canGoPrev = step > 0;
@@ -149,16 +167,65 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await saveRecurring(recurringForm);
-      setRecurringForm({
-        tipo: "expense",
-        descricao: "",
-        valor: 0,
-        frequencia: "mensal",
-      });
+      setRecurringForm(emptyRecurringForm());
       await reload();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Falha ao salvar recorrente",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startRecurringEdit = (item: TransacaoRecorrente) => {
+    if (!item.id) return;
+    setEditingRecurringId(item.id);
+    setRecurringForm({
+      id: item.id,
+      tipo: item.tipo,
+      descricao: item.descricao,
+      valor: Number(item.valor),
+      frequencia: item.frequencia || "mensal",
+      categoria_id: item.categoria_id || null,
+      ativo: item.ativo,
+    });
+  };
+
+  const cancelRecurringEdit = () => {
+    setEditingRecurringId(null);
+    setRecurringForm(emptyRecurringForm());
+  };
+
+  const onUpdateRecurring = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRecurringId) return;
+    setBusy(true);
+    try {
+      await updateRecurring(editingRecurringId, recurringForm);
+      cancelRecurringEdit();
+      await reload();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao atualizar recorrente",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onDeleteRecurring = async (item: TransacaoRecorrente) => {
+    if (!item.id || !window.confirm("Excluir recorrente?")) return;
+    setBusy(true);
+    try {
+      await removeRecurring(item.id);
+      if (editingRecurringId === item.id) {
+        cancelRecurringEdit();
+      }
+      await reload();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao excluir recorrente",
       );
     } finally {
       setBusy(false);
@@ -170,7 +237,7 @@ export default function PlanningPage() {
     try {
       await createSnapshot({ mes, confirm_negative: confirmNegative });
       setConfirmSheetOpen(false);
-      await reload();
+      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao criar snapshot");
     } finally {
@@ -297,14 +364,14 @@ export default function PlanningPage() {
 
         {step === 1 && (
           <Card className="space-y-3">
-            <h3 className="text-lg">2. Configure transações recorrentes</h3>
+            <h3 className="text-lg">2. Gerencie transacoes recorrentes</h3>
             <p className="text-sm text-muted-foreground">
-              Registre valores que se repetem todos os meses (ex.: salário,
-              aluguel, assinaturas).
+              Entradas recorrentes funcionam como template mensal reutilizável e
+              editável a qualquer momento.
             </p>
             <form
               className="grid grid-cols-1 gap-2 sm:grid-cols-4"
-              onSubmit={onCreateRecurring}
+              onSubmit={editingRecurringId ? onUpdateRecurring : onCreateRecurring}
             >
               <Select
                 value={recurringForm.tipo}
@@ -314,6 +381,7 @@ export default function PlanningPage() {
                     tipo: e.target.value as TransacaoRecorrente["tipo"],
                   }))
                 }
+                disabled={busy}
               >
                 <option value="expense">Despesa</option>
                 <option value="income">Receita</option>
@@ -329,6 +397,7 @@ export default function PlanningPage() {
                 }
                 placeholder="Descrição"
                 required
+                disabled={busy}
               />
               <Input
                 type="number"
@@ -342,26 +411,70 @@ export default function PlanningPage() {
                 }
                 placeholder="Valor"
                 required
+                disabled={busy}
               />
               <Button type="submit" disabled={busy}>
-                Salvar recorrente
+                {editingRecurringId ? "Salvar alterações" : "Salvar recorrente"}
               </Button>
             </form>
+            {editingRecurringId && (
+              <div className="flex">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={cancelRecurringEdit}
+                  disabled={busy}
+                >
+                  Cancelar edição
+                </Button>
+              </div>
+            )}
 
-            <ul className="space-y-2 text-sm text-foreground">
-              {recurring.map((item) => (
-                <li className="rounded-md bg-surface px-3 py-2" key={item.id}>
-                  {item.tipo} - {item.descricao}: R${" "}
-                  {Number(item.valor).toFixed(2)}
-                  {item.ativo === false ? " (inativo)" : ""}
-                </li>
-              ))}
-              {recurring.length === 0 && (
-                <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
-                  Nenhuma transação recorrente registrada.
-                </li>
-              )}
-            </ul>
+            <div className="space-y-2 text-sm">
+              <h4 className="font-semibold">Recorrentes ativos</h4>
+              <ul className="space-y-2 text-foreground">
+                {activeRecurring.map((item) => (
+                  <li
+                    className="rounded-md bg-surface px-3 py-2"
+                    key={item.id}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p>
+                        {item.tipo} - {item.descricao}: R${" "}
+                        {Number(item.valor).toFixed(2)}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busy || !item.id}
+                          onClick={() => startRecurringEdit(item)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-expense hover:bg-expense-soft"
+                          disabled={busy || !item.id}
+                          onClick={() => void onDeleteRecurring(item)}
+                        >
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+                {activeRecurring.length === 0 && (
+                  <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
+                    Nenhuma transacao recorrente registrada.
+                  </li>
+                )}
+              </ul>
+            </div>
           </Card>
         )}
 
@@ -369,8 +482,8 @@ export default function PlanningPage() {
           <Card className="space-y-3">
             <h3 className="text-lg">3. Defina orçamentos por categoria</h3>
             <p className="text-sm text-muted-foreground">
-              Este valor representa o limite planejado para cada categoria no
-              mês selecionado.
+              Use esta etapa para estimar gastos que não fazem parte das contas
+              recorrentes (ex.: supermercado, restaurantes, compras).
             </p>
             <form
               className="grid grid-cols-1 gap-2 sm:grid-cols-3"
@@ -496,8 +609,8 @@ export default function PlanningPage() {
           <Card className="space-y-3">
             <h3 className="text-lg">4. Revise a projeção</h3>
             <p className="text-sm text-muted-foreground">
-              Revise o impacto estimado das receitas e despesas planejadas antes
-              de confirmar.
+              Projeção = receitas - despesas recorrentes - orçamentos variáveis.
+              Despesas já lançadas aparecem apenas como acompanhamento.
             </p>
             {projection ? (
               <div className="space-y-2">
@@ -509,7 +622,9 @@ export default function PlanningPage() {
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">Despesas lançadas</p>
+                    <p className="text-muted-foreground">
+                      Despesas já lançadas (informativo)
+                    </p>
                     <p className="font-semibold text-expense">
                       R$ {formatMoney(projection.expenses_logged)}
                     </p>
@@ -521,9 +636,7 @@ export default function PlanningPage() {
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">
-                      Orçamentos variáveis
-                    </p>
+                    <p className="text-muted-foreground">Orcamentos variaveis</p>
                     <p className="font-semibold text-warning">
                       R$ {formatMoney(projection.planned_variable)}
                     </p>
@@ -537,9 +650,7 @@ export default function PlanningPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Sem projeção disponível.
-              </p>
+              <p className="text-sm text-muted-foreground">Sem projeção disponível.</p>
             )}
           </Card>
         )}
@@ -548,8 +659,8 @@ export default function PlanningPage() {
           <Card className="space-y-3">
             <h3 className="text-lg">5. Confirme o planejamento</h3>
             <p className="text-sm text-muted-foreground">
-              Ao confirmar, um snapshot será criado para este mês e o ciclo
-              ficará como concluído.
+              Ao confirmar, um snapshot será criado para este mês e você será
+              direcionado ao dashboard para acompanhar a execução.
             </p>
             <div className="rounded-md bg-surface px-3 py-2 text-sm">
               Status atual: <strong>{status}</strong>

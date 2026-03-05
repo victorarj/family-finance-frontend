@@ -65,7 +65,7 @@ export const fixedOverview = (overrides: Partial<DashboardOverview> = {}): Dashb
   income_mtd: 2000,
   expenses_mtd: 400,
   balance: 1600,
-  projection: 1100,
+  projection: 1500,
   month_status: "IN_PROGRESS",
   ...overrides,
 });
@@ -76,7 +76,7 @@ export const fixedProjection = (overrides: Partial<PlanningProjection> = {}): Pl
   expenses_logged: 400,
   fixed_expenses: 0,
   planned_variable: 500,
-  projected_balance: 1100,
+  projected_balance: 1500,
   ...overrides,
 });
 

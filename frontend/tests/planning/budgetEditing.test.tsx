@@ -32,13 +32,13 @@ describe("planning - budget editing", () => {
 
     await user.click(screen.getByRole("button", { name: "Próximo" }));
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 900.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("R$ 1300.00").length).toBeGreaterThan(0);
     });
 
     page.unmount();
     renderWithProviders(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 900.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("R$ 1300.00").length).toBeGreaterThan(0);
     });
   });
 });

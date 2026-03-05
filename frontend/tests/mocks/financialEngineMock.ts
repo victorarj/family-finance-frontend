@@ -5,6 +5,7 @@ import type {
   Expense,
   Income,
   MonthStatus,
+  SnapshotDetails,
   SnapshotMensal,
   TransacaoRecorrente,
 } from "../../src/types";
@@ -49,7 +50,7 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
   let expenses = [...(options.expenses ?? [])];
   let budgets = [...(options.budgets ?? [])];
   let snapshots = [...(options.snapshots ?? [])];
-  const recurring = [...(options.recurring ?? [])];
+  let recurring = [...(options.recurring ?? [])];
   let idSeq = 1000;
   let lastSnapshotPayload: { mes: string; confirm_negative?: boolean } | null = null;
 
@@ -77,8 +78,15 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
       .filter((b) => b.mes === mes)
       .reduce((acc, b) => acc + toNumber(b.valor_planejado), 0);
 
-  const projectionForMonth = (mes: string) =>
-    incomeTotal(mes) - expensesTotal(mes) - plannedVariable(mes);
+  const projectionForMonth = (mes: string) => {
+    const recurringIncomeTotal = recurring
+      .filter((r) => r.ativo !== false && r.tipo === "income")
+      .reduce((acc, r) => acc + toNumber(r.valor), 0);
+    const fixedExpenses = recurring
+      .filter((r) => r.ativo !== false && r.tipo === "expense")
+      .reduce((acc, r) => acc + toNumber(r.valor), 0);
+    return incomeTotal(mes) + recurringIncomeTotal - fixedExpenses - plannedVariable(mes);
+  };
 
   const overviewForMonth = (mes: string) => ({
     income_mtd: incomeTotal(mes),
@@ -87,6 +95,8 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
     projection: projectionForMonth(mes),
     month_status: statusForMonth(mes),
   });
+
+  const snapshotForMonth = (mes: string) => snapshots.find((s) => s.mes === mes) || null;
 
   const isLockedMonth = (mes: string) => hasSnapshot(mes);
 
@@ -97,18 +107,37 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
     http.get("/api/dashboard/", ({ request }) => {
       const mes = new URL(request.url).searchParams.get("mes") || CANONICAL_MONTH;
       const overview = overviewForMonth(mes);
+      const snapshot = snapshotForMonth(mes);
+      const actualIncome = incomeTotal(mes);
+      const actualExpenses = expensesTotal(mes);
+      const plannedExpenses = snapshot
+        ? toNumber(snapshot.total_fixas) + toNumber(snapshot.total_variaveis)
+        : null;
+      const plannedBalance = snapshot ? toNumber(snapshot.saldo_projetado) : null;
       return HttpResponse.json({
         month: mes,
         ...overview,
+        planned_income: snapshot ? toNumber(snapshot.total_receitas) : null,
+        planned_expenses: plannedExpenses,
+        actual_income: actualIncome,
+        actual_expenses: actualExpenses,
+        planned_vs_actual_diff:
+          plannedBalance === null ? null : actualIncome - actualExpenses - plannedBalance,
       });
     }),
     http.get("/api/planning/projection", ({ request }) => {
       const mes = new URL(request.url).searchParams.get("mes") || CANONICAL_MONTH;
       return HttpResponse.json({
         month: mes,
-        income: incomeTotal(mes),
+        income:
+          incomeTotal(mes) +
+          recurring
+            .filter((r) => r.ativo !== false && r.tipo === "income")
+            .reduce((acc, r) => acc + toNumber(r.valor), 0),
         expenses_logged: expensesTotal(mes),
-        fixed_expenses: 0,
+        fixed_expenses: recurring
+          .filter((r) => r.ativo !== false && r.tipo === "expense")
+          .reduce((acc, r) => acc + toNumber(r.valor), 0),
         planned_variable: plannedVariable(mes),
         projected_balance: projectionForMonth(mes),
       });
@@ -133,14 +162,27 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
       recurring.push({ ...body, id: ++idSeq });
       return HttpResponse.json(recurring[recurring.length - 1], { status: 201 });
     }),
+    http.put("/api/recurring/:id", async ({ params, request }) => {
+      const id = Number(params.id);
+      const idx = recurring.findIndex((r) => r.id === id);
+      if (idx < 0) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      const body = (await request.json()) as TransacaoRecorrente;
+      recurring[idx] = { ...recurring[idx], ...body, id };
+      return HttpResponse.json(recurring[idx]);
+    }),
+    http.delete("/api/recurring/:id", ({ params }) => {
+      const id = Number(params.id);
+      const idx = recurring.findIndex((r) => r.id === id);
+      if (idx < 0) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      recurring[idx] = { ...recurring[idx], ativo: false };
+      return HttpResponse.json(recurring[idx]);
+    }),
     http.get("/api/expenses/", () => {
       const withLocks = expenses.map((e) => ({ ...e, locked: isExpenseLocked(e) }));
       return HttpResponse.json(withLocks);
     }),
     http.post("/api/expenses/", async ({ request }) => {
       const body = (await request.json()) as Expense;
-      const mes = monthFromDate(body.data_inicio);
-      if (isLockedMonth(mes)) return HttpResponse.json({ message: "Month locked" }, { status: 409 });
       const next = { ...body, id: ++idSeq };
       expenses.push(next);
       return HttpResponse.json(next, { status: 201 });
@@ -169,8 +211,6 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
     }),
     http.post("/api/income/", async ({ request }) => {
       const body = (await request.json()) as Income;
-      const mes = monthFromDate(body.data_recebimento);
-      if (isLockedMonth(mes)) return HttpResponse.json({ message: "Month locked" }, { status: 409 });
       const next = { ...body, id: ++idSeq };
       incomes.push(next);
       return HttpResponse.json(next, { status: 201 });
@@ -230,6 +270,25 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
       const filtered = mes ? snapshots.filter((s) => s.mes === mes) : snapshots;
       return HttpResponse.json(filtered);
     }),
+    http.get("/api/monthly-snapshots/:id/details", ({ params }) => {
+      const id = Number(params.id);
+      const snapshot = snapshots.find((s) => s.id === id);
+      if (!snapshot) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      const mes = snapshot.mes;
+      const actualIncome = incomeTotal(mes);
+      const actualExpenses = expensesTotal(mes);
+      const plannedBalance = toNumber(snapshot.saldo_projetado);
+      const details: SnapshotDetails = {
+        snapshot,
+        planned_income: toNumber(snapshot.total_receitas),
+        planned_expenses: toNumber(snapshot.total_fixas) + toNumber(snapshot.total_variaveis),
+        projected_balance: plannedBalance,
+        actual_income: actualIncome,
+        actual_expenses: actualExpenses,
+        planned_vs_actual_diff: actualIncome - actualExpenses - plannedBalance,
+      };
+      return HttpResponse.json(details);
+    }),
     http.post("/api/monthly-snapshots/", async ({ request }) => {
       const body = (await request.json()) as { mes: string; confirm_negative?: boolean };
       const mes = body.mes || CANONICAL_MONTH;
@@ -247,8 +306,14 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
       const snap: SnapshotMensal = {
         id: ++idSeq,
         mes,
-        total_receitas: incomeTotal(mes),
-        total_fixas: expensesTotal(mes),
+        total_receitas:
+          incomeTotal(mes) +
+          recurring
+            .filter((r) => r.ativo !== false && r.tipo === "income")
+            .reduce((acc, r) => acc + toNumber(r.valor), 0),
+        total_fixas: recurring
+          .filter((r) => r.ativo !== false && r.tipo === "expense")
+          .reduce((acc, r) => acc + toNumber(r.valor), 0),
         total_variaveis: plannedVariable(mes),
         saldo_projetado: projectionForMonth(mes),
       };

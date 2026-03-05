@@ -9,6 +9,16 @@ interface ExpenseListProps {
   refreshTrigger?: number;
 }
 
+function formatDateLabel(value: unknown): string {
+  if (!value) return "Sem data";
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value);
+  if (text.length >= 10) return text.slice(0, 10);
+  return text;
+}
+
 export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps) {
   const [items, setItems] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,7 +75,7 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
             <div>
               <p className="font-medium text-foreground">{expense.nome}</p>
               <p className="text-sm text-muted-foreground">
-                {expense.data_inicio} • {expense.moeda}
+                {formatDateLabel(expense.data_inicio)}
               </p>
             </div>
             {expense.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}

@@ -1,6 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { update as updateExpense } from "../../src/apis/expenses";
+import { create as createExpense, update as updateExpense } from "../../src/apis/expenses";
+import { create as createIncome } from "../../src/apis/income";
 import ExpenseList from "../../src/components/ExpenseList";
 import IncomeList from "../../src/components/IncomeList";
 import { CANONICAL_MONTH, baseExpense, baseIncome, baseSnapshot } from "../fixtures/financialData";
@@ -24,6 +25,12 @@ describe("snapshots - locking", () => {
         status: expect.toSatisfy((value: number) => value === 403 || value === 409),
       },
     });
+    await expect(
+      createExpense(baseExpense({ nome: "New Locked Month Expense" })),
+    ).resolves.toMatchObject({ status: 201 });
+    await expect(
+      createIncome(baseIncome({ nome: "New Locked Month Income" })),
+    ).resolves.toMatchObject({ status: 201 });
 
     renderWithProviders(
       <>

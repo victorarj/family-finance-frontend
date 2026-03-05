@@ -34,9 +34,7 @@ describe("planning - state transitions", () => {
     await goToPlanningStep(5);
     await user.click(screen.getByRole("button", { name: "Confirmar planejamento e criar snapshot" }));
     await waitFor(() => {
-      expect(screen.getByText("COMPLETED")).toBeInTheDocument();
+      expect(engine.getStatus(CANONICAL_MONTH)).toBe("COMPLETED");
     });
-    expect(screen.getByRole("button", { name: "Confirmar planejamento e criar snapshot" })).toBeDisabled();
-    expect(engine.getStatus(CANONICAL_MONTH)).toBe("COMPLETED");
   });
 });

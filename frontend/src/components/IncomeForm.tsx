@@ -13,6 +13,10 @@ interface IncomeFormProps {
   onCancel: () => void;
 }
 
+function dateToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const initialIncome = (ownerEmail: string): Income => ({
   nome: "",
   valor: 0,
@@ -37,7 +41,12 @@ function normalizeIncome(income: Income): Income {
   };
 }
 
-export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel }: IncomeFormProps) {
+export default function IncomeForm({
+  income,
+  currentUserEmail,
+  onSaved,
+  onCancel,
+}: IncomeFormProps) {
   const [form, setForm] = useState<Income>(initialIncome(currentUserEmail));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,7 +61,11 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
     setLoading(true);
 
     try {
-      const action = income ? update(income.id || 0, form) : create(form);
+      const payload: Income = {
+        ...form,
+        data_recebimento: form.data_recebimento || dateToday(),
+      };
+      const action = income ? update(income.id || 0, payload) : create(payload);
       const res = await action;
       onSaved(res.data);
       if (!income) {
@@ -67,13 +80,19 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
 
   return (
     <form className="space-y-3" onSubmit={handleSubmit}>
-      {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
+      {error && (
+        <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">
+          {error}
+        </p>
+      )}
 
       <FormField label="Nome da receita" required>
         <Input
           type="text"
           value={form.nome}
-          onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, nome: e.target.value }))
+          }
           required
           disabled={loading}
         />
@@ -85,18 +104,21 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
             type="number"
             step="0.01"
             value={form.valor}
-            onChange={(e) => setForm((prev) => ({ ...prev, valor: Number(e.target.value) }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, valor: Number(e.target.value) }))
+            }
             required
             disabled={loading}
           />
         </FormField>
-        <FormField label="Data de recebimento (dd/mm/yyyy)" required>
+        <FormField label="Data de recebimento">
           <Input
             type="date"
             lang="pt-PT"
             value={form.data_recebimento}
-            onChange={(e) => setForm((prev) => ({ ...prev, data_recebimento: e.target.value }))}
-            required
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, data_recebimento: e.target.value }))
+            }
             disabled={loading}
           />
         </FormField>
@@ -108,7 +130,9 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
             type="text"
             maxLength={3}
             value={form.moeda}
-            onChange={(e) => setForm((prev) => ({ ...prev, moeda: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, moeda: e.target.value }))
+            }
             disabled={loading}
           />
         </FormField>
@@ -119,7 +143,9 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
           className="min-h-[3.5rem]"
           rows={2}
           value={form.descricao || ""}
-          onChange={(e) => setForm((prev) => ({ ...prev, descricao: e.target.value }))}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, descricao: e.target.value }))
+          }
           disabled={loading}
         />
       </FormField>
@@ -128,7 +154,12 @@ export default function IncomeForm({ income, currentUserEmail, onSaved, onCancel
         <Button type="submit" disabled={loading}>
           {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
         </Button>
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={loading}
+        >
           Cancelar
         </Button>
       </div>

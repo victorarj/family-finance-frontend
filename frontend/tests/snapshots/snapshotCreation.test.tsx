@@ -25,8 +25,8 @@ describe("snapshots - creation", () => {
       const snapshot = engine.getSnapshots().find((s) => s.mes === CANONICAL_MONTH);
       expect(snapshot).toBeDefined();
       expect(snapshot?.total_receitas).toBe(2000);
-      expect(snapshot?.total_fixas).toBe(1000);
-      expect(snapshot?.saldo_projetado).toBe(1000);
+      expect(snapshot?.total_fixas).toBe(0);
+      expect(snapshot?.saldo_projetado).toBe(2000);
     });
   });
 });

@@ -31,6 +31,7 @@ describe("transactions - expense creation", () => {
     const valueInput = screen.getByRole("spinbutton", { name: /^Valor/i });
     await user.clear(valueInput);
     await user.type(valueInput, "200");
+    await user.click(screen.getByRole("button", { name: /Opções avançadas/i }));
     await user.type(screen.getByLabelText(/Data de início/i), `${CANONICAL_MONTH}-02`);
     await user.type(screen.getByLabelText(/Data de fim/i), `${CANONICAL_MONTH}-28`);
     await user.click(screen.getByRole("button", { name: "Adicionar" }));

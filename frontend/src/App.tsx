@@ -10,12 +10,14 @@ import IncomePage from "./pages/IncomePage";
 import LoginPage from "./pages/LoginPage";
 import PlanningPage from "./pages/PlanningPage";
 import RegisterPage from "./pages/RegisterPage";
+import SnapshotsPage from "./pages/SnapshotsPage";
 
 const TABS = [
   { key: "/", label: "Dashboard", icon: <span className="text-xs font-semibold">DB</span> },
   { key: "/expenses", label: "Despesas", icon: <span className="text-xs font-semibold">DS</span> },
-  { key: "/income", label: "Receitas", icon: <span className="text-xs font-semibold">RC</span> },
   { key: "/planning", label: "Planejar", icon: <span className="text-xs font-semibold">PL</span> },
+  { key: "/income", label: "Receitas", icon: <span className="text-xs font-semibold">RC</span> },
+  { key: "/snapshots", label: "Snapshots", icon: <span className="text-xs font-semibold">SN</span> },
 ];
 
 function AppContent() {
@@ -83,6 +85,14 @@ function AppContent() {
           element={
             <RequireAuth>
               <PlanningPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/snapshots"
+          element={
+            <RequireAuth>
+              <SnapshotsPage />
             </RequireAuth>
           }
         />

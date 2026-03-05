@@ -25,36 +25,63 @@ function MetricCard({ title, value, tone = "default" }: MetricCardProps) {
 }
 
 type PlannedActualBlockProps = {
-  planned: number | null;
-  actual: number | null;
+  plannedIncome: number | null;
+  plannedExpenses: number | null;
+  actualIncome: number | null;
+  actualExpenses: number | null;
   variance: number | null;
 };
 
-function PlannedActualBlock({ planned, actual, variance }: PlannedActualBlockProps) {
+function PlannedActualBlock({
+  plannedIncome,
+  plannedExpenses,
+  actualIncome,
+  actualExpenses,
+  variance,
+}: PlannedActualBlockProps) {
   const varianceTone = variance == null ? "text-foreground" : variance >= 0 ? "text-income" : "text-expense";
+  if (plannedIncome == null || plannedExpenses == null) {
+    return (
+      <Card className="space-y-2">
+        <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
+        <p className="text-sm text-muted-foreground">
+          Sem baseline planejada para este mês. Crie um snapshot no fluxo de planejamento.
+        </p>
+      </Card>
+    );
+  }
   return (
     <Card className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
-        <span className="rounded-md bg-secondary px-2 py-1 text-xs text-muted-foreground">Em preparação</span>
-      </div>
+      <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
       <div className="grid grid-cols-3 gap-2 text-sm">
         <div className="rounded-md bg-surface px-3 py-2">
-          <p className="text-xs text-muted-foreground">Planejado</p>
+          <p className="text-xs text-muted-foreground">Receita planejada</p>
           <p className="font-display text-lg text-foreground">
-            {planned == null ? "—" : `R$ ${planned.toFixed(2)}`}
+            R$ {plannedIncome.toFixed(2)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
-          <p className="text-xs text-muted-foreground">Realizado</p>
+          <p className="text-xs text-muted-foreground">Receita realizada</p>
           <p className="font-display text-lg text-foreground">
-            {actual == null ? "—" : `R$ ${actual.toFixed(2)}`}
+            R$ {(actualIncome ?? 0).toFixed(2)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
-          <p className="text-xs text-muted-foreground">Variação</p>
+          <p className="text-xs text-muted-foreground">Diferença final</p>
           <p className={`font-display text-lg ${varianceTone}`}>
             {variance == null ? "—" : `R$ ${variance.toFixed(2)}`}
+          </p>
+        </div>
+        <div className="rounded-md bg-surface px-3 py-2">
+          <p className="text-xs text-muted-foreground">Despesa planejada</p>
+          <p className="font-display text-lg text-foreground">
+            R$ {plannedExpenses.toFixed(2)}
+          </p>
+        </div>
+        <div className="rounded-md bg-surface px-3 py-2">
+          <p className="text-xs text-muted-foreground">Despesa realizada</p>
+          <p className="font-display text-lg text-foreground">
+            R$ {(actualExpenses ?? 0).toFixed(2)}
           </p>
         </div>
       </div>
@@ -162,7 +189,13 @@ export default function Dashboard() {
           */}
         </div>
 
-        <PlannedActualBlock planned={null} actual={null} variance={null} />
+        <PlannedActualBlock
+          plannedIncome={overview.planned_income ?? null}
+          plannedExpenses={overview.planned_expenses ?? null}
+          actualIncome={overview.actual_income ?? null}
+          actualExpenses={overview.actual_expenses ?? null}
+          variance={overview.planned_vs_actual_diff ?? null}
+        />
       </section>
     </Container>
   );

@@ -9,6 +9,16 @@ interface IncomeListProps {
   refreshTrigger?: number;
 }
 
+function formatDateLabel(value: unknown): string {
+  if (!value) return "Sem data";
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value);
+  if (text.length >= 10) return text.slice(0, 10);
+  return text;
+}
+
 export default function IncomeList({ onEdit, refreshTrigger }: IncomeListProps) {
   const [items, setItems] = useState<Income[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +74,9 @@ export default function IncomeList({ onEdit, refreshTrigger }: IncomeListProps) 
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-medium text-foreground">{income.nome}</p>
-              <p className="text-sm text-muted-foreground">{income.data_recebimento}</p>
+              <p className="text-sm text-muted-foreground">
+                {formatDateLabel(income.data_recebimento)}
+              </p>
             </div>
             {income.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
           </div>

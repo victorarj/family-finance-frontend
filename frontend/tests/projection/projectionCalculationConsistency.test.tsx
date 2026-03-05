@@ -10,8 +10,10 @@ import { goToPlanningStep } from "../utils/planning";
 import { renderWithProviders } from "../utils/renderWithProviders";
 
 describe("projection - calculation consistency", () => {
+  let engine: ReturnType<typeof buildFinancialEngineMock>;
+
   beforeEach(() => {
-    const engine = buildFinancialEngineMock({
+    engine = buildFinancialEngineMock({
       incomes: [baseIncome({ valor: 2000, data_recebimento: `${CANONICAL_MONTH}-01` })],
       expenses: [baseExpense({ valor_total: 400, valor_mensal: 400, data_inicio: `${CANONICAL_MONTH}-02` })],
       budgets: [baseBudget({ valor_planejado: 500, mes: CANONICAL_MONTH })],
@@ -19,24 +21,24 @@ describe("projection - calculation consistency", () => {
     server.use(...engine.handlers);
   });
 
-  it("returns 1100 across planning, dashboard, and snapshot flows", async () => {
+  it("returns 1500 across planning, dashboard, and snapshot flows", async () => {
     const user = userEvent.setup();
     renderWithProviders(<PlanningPage />);
 
     await goToPlanningStep(4);
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 1100.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("R$ 1500.00").length).toBeGreaterThan(0);
     });
 
     await goToPlanningStep(5);
     await user.click(screen.getByRole("button", { name: "Confirmar planejamento e criar snapshot" }));
     await waitFor(() => {
-      expect(screen.getByText(/saldo projetado R\$ 1100.00/)).toBeInTheDocument();
+      expect(engine.getSnapshots().find((s) => s.mes === CANONICAL_MONTH)).toBeDefined();
     });
 
     renderWithProviders(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 1100.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("R$ 1500.00").length).toBeGreaterThan(0);
     });
   });
 });

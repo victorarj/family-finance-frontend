@@ -17,12 +17,16 @@ interface ExpenseFormProps {
   onCancel: () => void;
 }
 
+function dateToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const initialExpense = (ownerEmail: string): Expense => ({
   nome: "",
   valor_total: 0,
   valor_mensal: 0,
   numero_parcelas: 1,
-  data_inicio: "",
+  data_inicio: dateToday(),
   data_fim: "",
   categoria_id: 0,
   prioridade_id: 0,
@@ -49,6 +53,18 @@ function normalizeExpense(expense: Expense): Expense {
     data_inicio: normalizeDateInputValue(expense.data_inicio),
     data_fim: normalizeDateInputValue(expense.data_fim),
   };
+}
+
+function findDefaultIdByName<T extends { id?: number; nome?: string; nome_conta?: string }>(
+  items: T[],
+  candidates: string[],
+): number {
+  if (items.length === 0) return 0;
+  const matched = items.find((item) => {
+    const value = String(item.nome || item.nome_conta || "").toLowerCase();
+    return candidates.some((candidate) => value.includes(candidate));
+  });
+  return Number((matched?.id || items[0].id || 0));
 }
 
 export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCancel }: ExpenseFormProps) {
@@ -80,6 +96,23 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   }, []);
 
   useEffect(() => {
+    if (expense) return;
+    if (!priorities.length && !bankAccounts.length) return;
+    setForm((prev) => ({
+      ...prev,
+      prioridade_id:
+        prev.prioridade_id > 0
+          ? prev.prioridade_id
+          : findDefaultIdByName(priorities, ["baixa", "low"]),
+      conta_bancaria_id:
+        prev.conta_bancaria_id > 0
+          ? prev.conta_bancaria_id
+          : findDefaultIdByName(bankAccounts, ["principal", "main"]),
+      data_inicio: prev.data_inicio || dateToday(),
+    }));
+  }, [priorities, bankAccounts, expense]);
+
+  useEffect(() => {
     setForm(expense ? normalizeExpense(expense) : initialExpense(currentUserEmail));
     setShowAdvanced(Boolean(expense));
   }, [expense, currentUserEmail]);
@@ -97,6 +130,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         ...form,
         valor_mensal:
           Number(form.valor_mensal) > 0 ? Number(form.valor_mensal) : Number(derivedMonthlyValue),
+        data_inicio: form.data_inicio || dateToday(),
+        data_fim: form.data_fim || form.data_inicio || dateToday(),
       };
       const action = expense ? update(expense.id || 0, payload) : create(payload);
       const res = await action;
@@ -155,29 +190,6 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </FormField>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label="Data de início (dd/mm/yyyy)" required>
-          <Input
-            type="date"
-            lang="pt-PT"
-            value={form.data_inicio}
-            onChange={(e) => setForm((prev) => ({ ...prev, data_inicio: e.target.value }))}
-            required
-            disabled={loading}
-          />
-        </FormField>
-        <FormField label="Data de fim (dd/mm/yyyy)" required>
-          <Input
-            type="date"
-            lang="pt-PT"
-            value={form.data_fim}
-            onChange={(e) => setForm((prev) => ({ ...prev, data_fim: e.target.value }))}
-            required
-            disabled={loading}
-          />
-        </FormField>
-      </div>
-
       <button
         type="button"
         className="text-sm font-medium text-foreground/80 hover:text-foreground"
@@ -189,6 +201,27 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
 
       {showAdvanced && (
         <div className="space-y-3 rounded-md border border-border bg-surface p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormField label="Data de início (opcional)">
+              <Input
+                type="date"
+                lang="pt-PT"
+                value={form.data_inicio}
+                onChange={(e) => setForm((prev) => ({ ...prev, data_inicio: e.target.value }))}
+                disabled={loading}
+              />
+            </FormField>
+            <FormField label="Data de fim (opcional)">
+              <Input
+                type="date"
+                lang="pt-PT"
+                value={form.data_fim}
+                onChange={(e) => setForm((prev) => ({ ...prev, data_fim: e.target.value }))}
+                disabled={loading}
+              />
+            </FormField>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField label="Número de parcelas" required>
               <Input
