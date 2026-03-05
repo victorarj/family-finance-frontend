@@ -71,3 +71,22 @@ export default defineConfig([
   },
 ])
 ```
+
+## Run with Docker
+
+Build the frontend image:
+
+```bash
+docker build -t finances-frontend .
+```
+
+Run it on `http://localhost:8080`:
+
+```bash
+docker run --rm -p 8080:80 finances-frontend
+```
+
+Notes:
+- The image builds the Vite app and serves static files with Nginx.
+- SPA routes are supported via `try_files ... /index.html`.
+- Requests to `/api/*` are proxied to `http://host.docker.internal:3000/*` from inside the container.
