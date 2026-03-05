@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const client = axios.create({ baseURL: "/api" });
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const normalizedBaseUrl = rawBaseUrl?.trim().replace(/\/+$/, "");
+
+const client = axios.create({
+  // In production (Render static site), set VITE_API_BASE_URL to your backend URL.
+  // In local dev, fallback to Vite proxy at /api.
+  baseURL: normalizedBaseUrl || "/api",
+});
 
 // request interceptor to add Authorization header if token present
 client.interceptors.request.use((config) => {

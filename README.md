@@ -90,3 +90,15 @@ Notes:
 - The image builds the Vite app and serves static files with Nginx.
 - SPA routes are supported via `try_files ... /index.html`.
 - Requests to `/api/*` are proxied to `http://host.docker.internal:3000/*` from inside the container.
+
+## Render Frontend API Configuration
+
+If you deploy this frontend as a Render Static Site, configure this environment variable:
+
+```bash
+VITE_API_BASE_URL=https://family-finance-backend-db-apis.onrender.com
+```
+
+Why:
+- Local development can use `"/api"` because Vite proxy rewrites requests.
+- Render Static Site does not apply Vite proxy rules in production, so the frontend must call the backend URL directly.
