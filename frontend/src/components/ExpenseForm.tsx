@@ -4,6 +4,7 @@ import { list as listCategories } from "../apis/categories";
 import { create, update } from "../apis/expenses";
 import { list as listPriorities } from "../apis/priorities";
 import type { BankAccount, Category, Expense, Priority } from "../types";
+import { normalizeDisplayText } from "../utils/text";
 import Button from "./Button";
 import FormField from "./FormField";
 import Input from "./Input";
@@ -84,7 +85,14 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
           listPriorities(),
           listBankAccounts(),
         ]);
-        setCategories(Array.isArray(catsRes.data) ? catsRes.data : []);
+        setCategories(
+          Array.isArray(catsRes.data)
+            ? catsRes.data.map((category) => ({
+                ...category,
+                nome: normalizeDisplayText(category.nome),
+              }))
+            : [],
+        );
         setPriorities(Array.isArray(prioritiesRes.data) ? prioritiesRes.data : []);
         setBankAccounts(Array.isArray(banksRes.data) ? banksRes.data : []);
       } catch (err) {

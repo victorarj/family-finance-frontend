@@ -33,6 +33,7 @@ import Input from "../components/Input";
 import PlanningLayout from "../components/PlanningLayout";
 import Select from "../components/Select";
 import TransactionSheet from "../components/TransactionSheet";
+import { normalizeDisplayText } from "../utils/text";
 
 function monthNow() {
   return new Date().toISOString().slice(0, 7);
@@ -132,7 +133,12 @@ export default function PlanningPage() {
       setRecurring(Array.isArray(recurringRes.data) ? recurringRes.data : []);
       setSnapshots(Array.isArray(snapshotsRes.data) ? snapshotsRes.data : []);
       setCategories(
-        Array.isArray(categoriesRes.data) ? categoriesRes.data : [],
+        Array.isArray(categoriesRes.data)
+          ? categoriesRes.data.map((category) => ({
+              ...category,
+              nome: normalizeDisplayText(category.nome),
+            }))
+          : [],
       );
     } catch (err) {
       setError(
