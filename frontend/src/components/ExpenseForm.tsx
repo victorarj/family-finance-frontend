@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { list as listBankAccounts } from "../apis/bankAccounts";
 import { list as listCategories } from "../apis/categories";
 import { create, update } from "../apis/expenses";
@@ -83,7 +84,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         const [catsRes, prioritiesRes, banksRes] = await Promise.all([
           listCategories(),
           listPriorities(),
-          listBankAccounts(),
+          listBankAccounts({ activeOnly: !expense }),
         ]);
         setCategories(
           Array.isArray(catsRes.data)
@@ -101,11 +102,17 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
     };
 
     loadDropdownData();
-  }, []);
+  }, [expense]);
+
+  const selectableAccounts = expense
+    ? bankAccounts
+    : bankAccounts.filter((account) => account.ativo);
+  const selectedAccount = selectableAccounts.find((account) => account.id === form.conta_bancaria_id);
+  const hasSelectableBankAccount = selectableAccounts.length > 0;
 
   useEffect(() => {
     if (expense) return;
-    if (!priorities.length && !bankAccounts.length) return;
+    if (!priorities.length && !selectableAccounts.length) return;
     setForm((prev) => ({
       ...prev,
       prioridade_id:
@@ -115,10 +122,10 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       conta_bancaria_id:
         prev.conta_bancaria_id > 0
           ? prev.conta_bancaria_id
-          : findDefaultIdByName(bankAccounts, ["principal", "main"]),
+          : findDefaultIdByName(selectableAccounts, ["principal", "main"]),
       data_inicio: prev.data_inicio || dateToday(),
     }));
-  }, [priorities, bankAccounts, expense]);
+  }, [priorities, selectableAccounts, expense]);
 
   useEffect(() => {
     setForm(expense ? normalizeExpense(expense) : initialExpense(currentUserEmail));
@@ -158,6 +165,14 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   return (
     <form className="space-y-3" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
+      {!expense && !hasSelectableBankAccount && (
+        <div className="rounded-md border border-border bg-surface px-3 py-3 text-sm text-muted-foreground">
+          Nenhuma conta bancária ativa disponível.{" "}
+          <Link className="text-primary hover:underline" to="/settings/bank-accounts">
+            Criar conta agora
+          </Link>
+        </div>
+      )}
 
       <FormField label="Nome da despesa" required>
         <Input
@@ -293,16 +308,22 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
                   value={form.conta_bancaria_id}
                   onChange={(e) => setForm((prev) => ({ ...prev, conta_bancaria_id: Number(e.target.value) }))}
                   required
-                  disabled={loading}
+                  disabled={loading || (!expense && !hasSelectableBankAccount)}
                 >
                   <option value={0}>Selecione</option>
-                  {bankAccounts.map((account) => (
+                  {selectableAccounts.map((account) => (
                     <option key={account.id} value={account.id || 0}>
                       {account.nome_conta}
+                      {!account.ativo ? " (inativa)" : ""}
                     </option>
                   ))}
                 </Select>
               </FormField>
+              {expense && selectedAccount && !selectedAccount.ativo && (
+                <p className="text-xs text-muted-foreground">
+                  Esta despesa usa uma conta atualmente inativa. O histórico permanece preservado.
+                </p>
+              )}
               <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <input
                   className="h-4 w-4 rounded border-border text-primary focus:ring-ring"
@@ -353,7 +374,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       )}
 
       <div className="flex items-center gap-2">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || (!expense && !hasSelectableBankAccount)}>
           {loading ? "Salvando..." : expense ? "Atualizar" : "Adicionar"}
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>

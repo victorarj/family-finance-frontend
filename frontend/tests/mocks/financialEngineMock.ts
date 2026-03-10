@@ -1,6 +1,7 @@
 import { http, HttpResponse, type RequestHandler } from "msw";
 import { CANONICAL_MONTH, baseBudget, baseCategories } from "../fixtures/financialData";
 import type {
+  BankAccount,
   BudgetMensal,
   Expense,
   Income,
@@ -13,6 +14,7 @@ import type {
 type EngineOptions = {
   incomes?: Income[];
   expenses?: Expense[];
+  bankAccounts?: BankAccount[];
   budgets?: BudgetMensal[];
   snapshots?: SnapshotMensal[];
   recurring?: TransacaoRecorrente[];
@@ -49,6 +51,20 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
   let incomes = [...(options.incomes ?? [])];
   let expenses = [...(options.expenses ?? [])];
   let budgets = [...(options.budgets ?? [])];
+  let bankAccounts = [
+    ...(options.bankAccounts ?? [
+      {
+        id: 1,
+        nome_conta: "Main",
+        dono_conta: "user@example.com",
+        banco: "X",
+        moeda: "BRL",
+        ativo: true,
+        is_historically_used: false,
+        can_delete: true,
+      },
+    ]),
+  ];
   let snapshots = [...(options.snapshots ?? [])];
   let recurring = [...(options.recurring ?? [])];
   let idSeq = 1000;
@@ -153,9 +169,58 @@ export function buildFinancialEngineMock(options: EngineOptions = {}): EngineMoc
         { id: 2, nome: "Low", nivel: 2 },
       ]),
     ),
-    http.get("/api/bank-accounts/", () =>
-      HttpResponse.json([{ id: 1, nome_conta: "Main", dono_conta: "user@example.com", banco: "X", moeda: "BRL" }]),
-    ),
+    http.get("/api/bank-accounts/", ({ request }) => {
+      const activeOnly = new URL(request.url).searchParams.get("active_only") === "true";
+      return HttpResponse.json(activeOnly ? bankAccounts.filter((account) => account.ativo) : bankAccounts);
+    }),
+    http.post("/api/bank-accounts/", async ({ request }) => {
+      const body = (await request.json()) as { nome_conta: string; banco: string; moeda: string };
+      const next: BankAccount = {
+        id: ++idSeq,
+        nome_conta: body.nome_conta,
+        banco: body.banco,
+        moeda: body.moeda.toUpperCase(),
+        dono_conta: "user@example.com",
+        ativo: true,
+        is_historically_used: false,
+        can_delete: true,
+      };
+      bankAccounts.push(next);
+      return HttpResponse.json(next, { status: 201 });
+    }),
+    http.put("/api/bank-accounts/:id", async ({ params, request }) => {
+      const id = Number(params.id);
+      const index = bankAccounts.findIndex((account) => account.id === id);
+      if (index < 0) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      const body = (await request.json()) as { nome_conta: string; banco: string; moeda: string };
+      bankAccounts[index] = {
+        ...bankAccounts[index],
+        nome_conta: body.nome_conta,
+        banco: body.banco,
+        moeda: body.moeda.toUpperCase(),
+      };
+      return HttpResponse.json(bankAccounts[index]);
+    }),
+    http.post("/api/bank-accounts/:id/deactivate", ({ params }) => {
+      const id = Number(params.id);
+      const index = bankAccounts.findIndex((account) => account.id === id);
+      if (index < 0) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      bankAccounts[index] = { ...bankAccounts[index], ativo: false };
+      return HttpResponse.json(bankAccounts[index]);
+    }),
+    http.delete("/api/bank-accounts/:id", ({ params }) => {
+      const id = Number(params.id);
+      const account = bankAccounts.find((item) => item.id === id);
+      if (!account) return HttpResponse.json({ message: "Not found" }, { status: 404 });
+      if (!account.can_delete) {
+        return HttpResponse.json(
+          { error: "Historically used bank accounts must be deactivated instead" },
+          { status: 409 },
+        );
+      }
+      bankAccounts = bankAccounts.filter((item) => item.id !== id);
+      return HttpResponse.json(account);
+    }),
     http.get("/api/recurring/", () => HttpResponse.json(recurring)),
     http.post("/api/recurring/", async ({ request }) => {
       const body = (await request.json()) as TransacaoRecorrente;

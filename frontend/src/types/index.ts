@@ -4,6 +4,9 @@ export interface User {
   nome: string;
   email: string;
   telefone?: string;
+  onboarding_completed_at?: string | null;
+  planning_completed_at?: string | null;
+  last_transaction_date?: string | null;
 }
 
 // Expense
@@ -50,9 +53,20 @@ export interface Recipe {
 
 // Bank Account
 export interface BankAccount {
-  id?: number;
+  id: number;
   nome_conta: string;
   dono_conta: string;
+  banco: string;
+  moeda: string;
+  ativo: boolean;
+  is_historically_used: boolean;
+  can_delete: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BankAccountInput {
+  nome_conta: string;
   banco: string;
   moeda: string;
 }
