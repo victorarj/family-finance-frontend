@@ -1,20 +1,25 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { beforeEach, describe, expect, it } from "vitest";
-import App from "../../src/App";
 import OnboardingPage from "../../src/pages/OnboardingPage";
 import { server } from "../mocks/server";
-import { renderWithProviders, seedAuth } from "../utils/renderWithProviders";
+import { renderWithProviders } from "../utils/renderWithProviders";
 
-describe("auth - onboarding flow", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    window.location.hash = "#/";
-  });
+describe("Onboarding flow", () => {
+  it("advances through preferences, bank account creation, and review", async () => {
+    let accounts = [
+      {
+        id: 1,
+        nome_conta: "Carteira da Casa",
+        dono_conta: "user@example.com",
+        banco: "Itau",
+        moeda: "BRL",
+        ativo: true,
+        is_historically_used: true,
+        can_delete: true,
+      },
+    ];
 
-  it("redirects first-time authenticated users to onboarding", async () => {
-    seedAuth();
     server.use(
       http.get("/api/users/me", () =>
         HttpResponse.json({
@@ -25,88 +30,56 @@ describe("auth - onboarding flow", () => {
         }),
       ),
       http.get("/api/preferences/", () => HttpResponse.json(null)),
-      http.get("/api/bank-accounts/", () => HttpResponse.json([])),
-    );
-
-    render(<App />);
-
-    expect(
-      await screen.findByText(/Configure o essencial e comece leve/i),
-    ).toBeInTheDocument();
-  });
-
-  it("completes onboarding without adding bank accounts", async () => {
-    const user = userEvent.setup();
-    let preferencesSaved = false;
-    server.use(
-      http.get("/api/preferences/", () => HttpResponse.json(null)),
-      http.get("/api/bank-accounts/", () => HttpResponse.json([])),
       http.post("/api/preferences/", async ({ request }) => {
-        preferencesSaved = true;
-        const body = await request.json();
-        return HttpResponse.json({ id: 1, ...body }, { status: 201 });
+        const body = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(
+          {
+            id: 1,
+            tipo_residencia: body.tipo_residencia,
+            modo_registro: body.modo_registro,
+            planejamento_guiado: body.planejamento_guiado,
+          },
+          { status: 201 },
+        );
       }),
-      http.post("/api/users/me/onboarding/complete", () =>
-        HttpResponse.json({
-          id: 1,
-          nome: "User",
-          email: "user@example.com",
-          onboarding_completed_at: "2026-03-10T12:00:00.000Z",
-        }),
-      ),
-      http.get("/api/users/me", () =>
-        HttpResponse.json({
-          id: 1,
-          nome: "User",
-          email: "user@example.com",
-          onboarding_completed_at: null,
-        }),
-      ),
+      http.get("/api/bank-accounts/", () => HttpResponse.json(accounts)),
+      http.post("/api/bank-accounts/", async ({ request }) => {
+        const body = (await request.json()) as Record<string, string>;
+        const created = {
+          id: accounts.length + 1,
+          nome_conta: body.nome_conta,
+          dono_conta: "user@example.com",
+          banco: body.banco,
+          moeda: body.moeda,
+          ativo: true,
+          is_historically_used: true,
+          can_delete: true,
+        };
+        accounts = [...accounts, created];
+        return HttpResponse.json(created, { status: 201 });
+      }),
     );
 
     renderWithProviders(<OnboardingPage />);
 
-    await user.click(screen.getByRole("button", { name: /Continuar/i }));
-    await screen.findByText(/Adicionar conta bancária/i);
-    await user.click(screen.getByRole("button", { name: /Pular por agora/i }));
+    expect(await screen.findByText("Configure a sua conta")).toBeInTheDocument();
+    expect(screen.getByText("Como voce quer organizar a casa?")).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(preferencesSaved).toBe(true);
-    });
-  });
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
-  it("does not keep completed users inside onboarding", async () => {
-    seedAuth();
-    window.location.hash = "#/onboarding";
-    server.use(
-      http.get("/api/users/me", () =>
-        HttpResponse.json({
-          id: 1,
-          nome: "User",
-          email: "user@example.com",
-          onboarding_completed_at: "2026-03-10T12:00:00.000Z",
-        }),
-      ),
-      http.get("/api/dashboard/", () =>
-        HttpResponse.json({
-          month: "2026-03",
-          balance: 0,
-          income_mtd: 0,
-          expenses_mtd: 0,
-          projection: 0,
-          month_status: "NOT_STARTED",
-          planned_income: null,
-          planned_expenses: null,
-          actual_income: 0,
-          actual_expenses: 0,
-          planned_vs_actual_diff: null,
-        }),
-      ),
-    );
+    expect(await screen.findByText("Adicione a primeira conta")).toBeInTheDocument();
+    expect(screen.getByText("Contas ja encontradas")).toBeInTheDocument();
 
-    render(<App />);
+    await userEvent.clear(screen.getByLabelText("Nome da conta *"));
+    await userEvent.type(screen.getByLabelText("Nome da conta *"), "Conta conjunta");
+    await userEvent.type(screen.getByLabelText("Banco *"), "Santander");
+    await userEvent.clear(screen.getByLabelText("Moeda *"));
+    await userEvent.type(screen.getByLabelText("Moeda *"), "EUR");
 
-    expect(await screen.findByText(/Household Finances/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Configure o essencial e comece leve/i)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Criar conta e continuar" }));
+
+    expect(await screen.findByText("Revise e conclua")).toBeInTheDocument();
+    expect(screen.getByText("Total configurado: 2")).toBeInTheDocument();
+    expect(screen.getByText("Conta conjunta - EUR")).toBeInTheDocument();
   });
 });

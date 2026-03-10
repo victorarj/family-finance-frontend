@@ -34,9 +34,14 @@ function cn(...classes: Array<string | undefined | false>) {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "md", leftIcon, rightIcon, children, ...props }, ref) => {
+  ({ className, variant = "default", size = "md", leftIcon, rightIcon, children, type = "button", ...props }, ref) => {
     return (
-      <button ref={ref} className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)} {...props}>
+      <button
+        ref={ref}
+        type={type}
+        className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
+        {...props}
+      >
         {leftIcon}
         {children}
         {rightIcon}
