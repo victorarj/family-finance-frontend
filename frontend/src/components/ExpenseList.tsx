@@ -3,23 +3,16 @@ import { list, remove } from "../apis/expenses";
 import type { Expense } from "../types";
 import Button from "./Button";
 import Card from "./Card";
+import { EmptyStateIcon } from "./Icons";
+import { formatCurrency, formatDate } from "../utils/formatters";
 
 interface ExpenseListProps {
   onEdit: (expense: Expense) => void;
+  onCreate?: () => void;
   refreshTrigger?: number;
 }
 
-function formatDateLabel(value: unknown): string {
-  if (!value) return "Sem data";
-  if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
-  }
-  const text = String(value);
-  if (text.length >= 10) return text.slice(0, 10);
-  return text;
-}
-
-export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps) {
+export default function ExpenseList({ onEdit, onCreate, refreshTrigger }: ExpenseListProps) {
   const [items, setItems] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +57,18 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nenhuma despesa cadastrada.</p>;
+    return (
+      <div className="flex flex-col items-center rounded-2xl bg-surface px-4 py-6 text-center">
+        <EmptyStateIcon className="h-8 w-8 text-muted-foreground" />
+        <p className="mt-3 text-sm font-medium text-foreground">Nenhuma despesa cadastrada</p>
+        <p className="mt-1 text-sm text-muted-foreground">Adicione a primeira despesa para começar.</p>
+        {onCreate && (
+          <Button className="mt-4" size="sm" onClick={onCreate}>
+            Adicionar despesa
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -75,7 +79,7 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
             <div>
               <p className="font-medium text-foreground">{expense.nome}</p>
               <p className="text-sm text-muted-foreground">
-                {formatDateLabel(expense.data_inicio)}
+                {formatDate(expense.data_inicio)}
               </p>
             </div>
             {expense.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
@@ -85,13 +89,13 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
             <div className="rounded-md bg-surface px-3 py-2">
               <p className="text-muted-foreground">Total</p>
               <p className="font-semibold text-expense">
-                {expense.valor_total} {expense.moeda}
+                {formatCurrency(expense.valor_total)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
               <p className="text-muted-foreground">Mensal</p>
               <p className="font-semibold text-expense">
-                {expense.valor_mensal} {expense.moeda}
+                {formatCurrency(expense.valor_mensal)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">

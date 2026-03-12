@@ -6,6 +6,7 @@ import BottomNav from "./components/BottomNav";
 import Button from "./components/Button";
 import Container from "./components/Container";
 import Dashboard from "./components/Dashboard";
+import { HomeIcon, ExpenseIcon, PlanningIcon, IncomeIcon, SnapshotIcon, SettingsIcon, LogoutIcon } from "./components/Icons";
 import { useViewportMode } from "./hooks/useViewport";
 import DocumentsPage from "./features/documents/DocumentsPage";
 import BankAccountsSettingsPage from "./pages/BankAccountsSettingsPage";
@@ -18,11 +19,11 @@ import RegisterPage from "./pages/RegisterPage";
 import SnapshotsPage from "./pages/SnapshotsPage";
 
 const TABS = [
-  { key: "/", label: "Dashboard", icon: <span className="text-xs font-semibold">DB</span> },
-  { key: "/expenses", label: "Despesas", icon: <span className="text-xs font-semibold">DS</span> },
-  { key: "/planning", label: "Planejar", icon: <span className="text-xs font-semibold">PL</span> },
-  { key: "/income", label: "Receitas", icon: <span className="text-xs font-semibold">RC</span> },
-  { key: "/snapshots", label: "Snapshots", icon: <span className="text-xs font-semibold">SN</span> },
+  { key: "/", label: "Painel", icon: <HomeIcon className="h-5 w-5" /> },
+  { key: "/expenses", label: "Despesas", icon: <ExpenseIcon className="h-5 w-5" /> },
+  { key: "/planning", label: "Planejar", icon: <PlanningIcon className="h-5 w-5" /> },
+  { key: "/income", label: "Receitas", icon: <IncomeIcon className="h-5 w-5" /> },
+  { key: "/snapshots", label: "Histórico", icon: <SnapshotIcon className="h-5 w-5" /> },
 ];
 
 function AppContent() {
@@ -60,7 +61,7 @@ function AppContent() {
 
   if (auth.token && auth.isProfileLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         <Container>
           <div className="py-10 text-sm text-muted-foreground">Carregando...</div>
         </Container>
@@ -77,23 +78,27 @@ function AppContent() {
   }
 
   return (
-    <div className={`min-h-screen ${isPlanningRoute ? "bg-secondary" : "bg-background"}`}>
+    <div className={`min-h-dvh ${isPlanningRoute ? "bg-secondary" : "bg-background"}`}>
       {showAppChrome && isMobile && (
         <header className="border-b border-border bg-card/90">
-          <Container className="py-4 sm:py-4" size="lg">
-            <div className="flex items-center justify-between gap-3">
+          <Container className="py-2" size="lg">
+            <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <h1 className="text-lg text-foreground">Household Finances</h1>
-                <p className="truncate text-xs text-muted-foreground">{auth.userEmail || "Sem usuário"}</p>
+                <h1 className="text-base text-foreground">Household Finances</h1>
+                <p className="truncate text-[11px] text-muted-foreground">{auth.userEmail || "Sem usuário"}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {!isOnboardingRoute && (
-                  <Link className="text-sm text-primary hover:underline" to="/settings/bank-accounts">
-                    Settings
+                  <Link
+                    aria-label="Configurações"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    to="/settings/bank-accounts"
+                  >
+                    <SettingsIcon className="h-5 w-5" />
                   </Link>
                 )}
-                <Button size="sm" variant="outline" onClick={handleLogout}>
-                  Logout
+                <Button aria-label="Sair" size="icon" variant="outline" onClick={handleLogout}>
+                  <LogoutIcon className="h-5 w-5" />
                 </Button>
               </div>
             </div>
@@ -123,7 +128,13 @@ function AppContent() {
             />
           )}
 
-          <main className={showAppChrome && isMobile && !isOnboardingRoute && !isSettingsRoute ? "pb-20" : ""}>
+          <main
+            className={
+              showAppChrome && isMobile && !isOnboardingRoute && !isSettingsRoute
+                ? "pb-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom))]"
+                : ""
+            }
+          >
             <Routes>
               <Route
                 path="/"

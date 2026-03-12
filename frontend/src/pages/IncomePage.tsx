@@ -46,15 +46,13 @@ export default function IncomePage({ currentUserEmail }: IncomePageProps) {
 
   return (
     <Container size="xl">
-      <section className="space-y-5 lg:space-y-6">
-        <Card>
-          <h2 className="text-xl">Receitas</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Acompanhe entradas e mantenha previsibilidade financeira.</p>
-        </Card>
-
-        <Card>
-          <h3 className="mb-3 text-lg">Lista de receitas</h3>
-          <IncomeList onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
+      <section className="space-y-3 lg:space-y-6">
+        <Card className="space-y-3">
+          <div>
+            <h2 className="text-xl">Receitas</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Acompanhe entradas e mantenha previsibilidade financeira.</p>
+          </div>
+          <IncomeList onCreate={openCreateSheet} onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
         </Card>
       </section>
 

@@ -14,7 +14,7 @@ function createMessageId() {
 }
 
 function formatMessageTime(value: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("pt-BR", {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
@@ -110,9 +110,9 @@ export default function AiChat({ documents }: AiChatProps) {
     <section className="flex min-h-[min(70vh,780px)] flex-col gap-4 lg:min-h-[min(76vh,860px)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl text-foreground">AI chat</h2>
+          <h2 className="text-xl text-foreground">Chat com IA</h2>
           <p className="text-sm text-muted-foreground">
-            Ask questions across all ready documents or narrow to a selected subset.
+            Faça perguntas em todos os documentos prontos ou limite a busca a um subconjunto.
           </p>
         </div>
         <DocumentFilter
@@ -126,7 +126,7 @@ export default function AiChat({ documents }: AiChatProps) {
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1" ref={historyRef}>
           {messages.length === 0 && (
             <div className="rounded-xl bg-secondary/40 px-4 py-6 text-sm text-muted-foreground">
-              Start with a question like “Summarize my latest payslip” or “What recurring charges appear in my bills?”.
+              Comece com algo como “Resuma meu último holerite” ou “Quais cobranças recorrentes aparecem nas minhas contas?”.
             </div>
           )}
 
@@ -139,7 +139,7 @@ export default function AiChat({ documents }: AiChatProps) {
             >
               <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-wide">
                 <span className={message.role === "user" ? "text-background/80" : "text-muted-foreground"}>
-                  {message.role === "user" ? "You" : "Assistant"}
+                  {message.role === "user" ? "Você" : "Assistente"}
                 </span>
                 <span className={message.role === "user" ? "text-background/70" : "text-muted-foreground"}>
                   {formatMessageTime(message.timestamp)}
@@ -157,12 +157,12 @@ export default function AiChat({ documents }: AiChatProps) {
 
               {message.sources && message.sources.length > 0 && (
                 <details className="rounded-xl bg-background/70 px-3 py-2 text-sm text-foreground">
-                  <summary className="cursor-pointer font-medium text-muted-foreground">Sources</summary>
+                  <summary className="cursor-pointer font-medium text-muted-foreground">Fontes</summary>
                   <div className="mt-3 space-y-2">
                     {message.sources.map((source) => (
                       <div key={`${source.document_id}-${source.chunk_index}`} className="rounded-lg bg-secondary/70 px-3 py-2">
                         <p className="text-xs text-muted-foreground">
-                          Document #{source.document_id} · Chunk {source.chunk_index}
+                          Documento #{source.document_id} · Trecho {source.chunk_index}
                         </p>
                         <p className="mt-1 text-sm">{source.content_preview}</p>
                       </div>
@@ -175,7 +175,7 @@ export default function AiChat({ documents }: AiChatProps) {
 
           {isLoading && (
             <div className="mr-auto max-w-[96%] rounded-2xl bg-secondary/50 px-4 py-3 text-sm text-muted-foreground sm:max-w-[92%]">
-              <p className="animate-pulse">Assistant is typing…</p>
+              <p className="animate-pulse">Assistente digitando…</p>
             </div>
           )}
         </div>
@@ -189,7 +189,7 @@ export default function AiChat({ documents }: AiChatProps) {
             aria-label="Ask the assistant a question"
             className="min-h-28 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary"
             id="documents-chat-input"
-            placeholder="Ask about spending, income, invoices, or bank statements..."
+            placeholder="Pergunte sobre gastos, receitas, faturas ou extratos..."
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -200,9 +200,9 @@ export default function AiChat({ documents }: AiChatProps) {
             }}
           />
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground">Press Enter to send. Shift+Enter adds a new line.</p>
+            <p className="text-xs text-muted-foreground">Enter envia. Shift+Enter adiciona nova linha.</p>
             <Button disabled={isLoading || !draft.trim()} onClick={() => void submitQuestion()}>
-              Send
+              Enviar
             </Button>
           </div>
         </div>

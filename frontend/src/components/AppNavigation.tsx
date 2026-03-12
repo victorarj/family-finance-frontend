@@ -37,10 +37,10 @@ export function TabletNavigation({
           </div>
           <div className="flex items-center gap-2">
             <Link className="text-sm text-primary hover:underline" to="/settings/bank-accounts">
-              Settings
+              Configurações
             </Link>
             <Button size="sm" variant="outline" onClick={onLogout}>
-              Logout
+              Sair
             </Button>
           </div>
         </div>
@@ -122,10 +122,10 @@ export function DesktopNavigation({
             className="block rounded-xl px-4 py-2 text-sm text-primary transition-colors hover:bg-secondary"
             to="/settings/bank-accounts"
           >
-            Settings
+            Configurações
           </Link>
           <Button className="w-full justify-center" variant="outline" onClick={onLogout}>
-            Logout
+            Sair
           </Button>
         </div>
       </div>

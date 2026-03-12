@@ -11,8 +11,8 @@ vi.mock("../../src/components/Dashboard", () => ({
 }));
 
 describe("responsive app shell", () => {
-  it("keeps bottom navigation on mobile", async () => {
-    mockViewport(375);
+  it("keeps mobile navigation and compact icon actions at 390px", async () => {
+    mockViewport(390);
     seedAuth();
     window.location.hash = "#/";
 
@@ -20,6 +20,10 @@ describe("responsive app shell", () => {
 
     expect(await screen.findByText("Dashboard mock")).toBeInTheDocument();
     expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Painel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Despesas" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Configurações")).toBeInTheDocument();
+    expect(screen.getByLabelText("Sair")).toBeInTheDocument();
   });
 
   it("switches to large-screen navigation on desktop", async () => {
@@ -31,6 +35,6 @@ describe("responsive app shell", () => {
 
     await waitFor(() => expect(screen.getByText("Dashboard mock")).toBeInTheDocument());
     expect(screen.queryByTestId("bottom-nav")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Configurações" })).toBeInTheDocument();
   });
 });

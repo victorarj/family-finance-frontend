@@ -30,10 +30,12 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import FormField from "../components/FormField";
 import Input from "../components/Input";
+import MonthNavigator from "../components/MonthNavigator";
 import PlanningLayout from "../components/PlanningLayout";
 import Select from "../components/Select";
 import TransactionSheet from "../components/TransactionSheet";
 import { normalizeDisplayText } from "../utils/text";
+import { formatCurrency, formatMonthLabel, getMonthStatusLabel } from "../utils/formatters";
 
 function monthNow() {
   return new Date().toISOString().slice(0, 7);
@@ -42,10 +44,6 @@ function monthNow() {
 function toNumber(value: unknown) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
-}
-
-function formatMoney(value: unknown) {
-  return toNumber(value).toFixed(2);
 }
 
 const STEPS = [
@@ -311,14 +309,14 @@ export default function PlanningPage() {
 
   return (
     <PlanningLayout>
-      <section className="space-y-5 lg:space-y-6">
+      <section className="space-y-3 lg:space-y-6">
         <Card className="space-y-3">
           <h2 className="text-xl">Planejamento mensal</h2>
           <p className="text-sm text-muted-foreground">
             Siga o fluxo em etapas para estruturar seu mês antes de executar
             despesas e receitas.
           </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
             {STEPS.map((label, idx) => {
               const active = idx === step;
               const done = idx < step;
@@ -355,15 +353,11 @@ export default function PlanningPage() {
               Defina o mês de referência para carregar status, projeção,
               orçamentos e snapshots.
             </p>
-            <FormField label="Mês de referência" className="max-w-52">
-              <Input
-                type="month"
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-              />
-            </FormField>
-            <div className="rounded-md bg-surface px-3 py-2 text-sm">
-              Status atual: <strong>{status}</strong>
+            <div className="flex flex-col gap-2">
+              <MonthNavigator month={mes} onChange={setMes} />
+              <div className="rounded-full bg-surface px-3 py-2 text-sm">
+                Status atual: <strong>{getMonthStatusLabel(status)}</strong>
+              </div>
             </div>
           </Card>
         )}
@@ -447,8 +441,7 @@ export default function PlanningPage() {
                   >
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <p className="min-w-0">
-                        {item.tipo} - {item.descricao}: R${" "}
-                        {Number(item.valor).toFixed(2)}
+                        {item.tipo} - {item.descricao}: {formatCurrency(item.valor)}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -575,7 +568,7 @@ export default function PlanningPage() {
                   ) : (
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="font-semibold text-foreground">
-                        R$ {Number(budget.valor_planejado).toFixed(2)}
+                        {formatCurrency(budget.valor_planejado)}
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
@@ -624,7 +617,7 @@ export default function PlanningPage() {
                   <div className="rounded-md bg-surface px-3 py-2">
                     <p className="text-muted-foreground">Receita prevista</p>
                     <p className="font-semibold text-income">
-                      R$ {formatMoney(projection.income)}
+                      {formatCurrency(projection.income)}
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2">
@@ -632,25 +625,25 @@ export default function PlanningPage() {
                       Despesas já lançadas (informativo)
                     </p>
                     <p className="font-semibold text-expense">
-                      R$ {formatMoney(projection.expenses_logged)}
+                      {formatCurrency(projection.expenses_logged)}
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2">
                     <p className="text-muted-foreground">Despesas fixas</p>
                     <p className="font-semibold text-expense">
-                      R$ {formatMoney(projection.fixed_expenses)}
+                      {formatCurrency(projection.fixed_expenses)}
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2">
                     <p className="text-muted-foreground">Orcamentos variaveis</p>
                     <p className="font-semibold text-warning">
-                      R$ {formatMoney(projection.planned_variable)}
+                      {formatCurrency(projection.planned_variable)}
                     </p>
                   </div>
                   <div className="rounded-md bg-surface px-3 py-2 md:col-span-2 xl:col-span-4">
                     <p className="text-muted-foreground">Saldo projetado</p>
                     <p className={`font-semibold ${projectionTone}`}>
-                      R$ {formatMoney(projection.projected_balance)}
+                      {formatCurrency(projection.projected_balance)}
                     </p>
                   </div>
                 </div>
@@ -668,8 +661,8 @@ export default function PlanningPage() {
               Ao confirmar, um snapshot será criado para este mês e você será
               direcionado ao dashboard para acompanhar a execução.
             </p>
-            <div className="rounded-md bg-surface px-3 py-2 text-sm">
-              Status atual: <strong>{status}</strong>
+            <div className="rounded-full bg-surface px-3 py-2 text-sm">
+              Status atual: <strong>{getMonthStatusLabel(status)}</strong>
             </div>
             <Button
               onClick={onCreateSnapshot}
@@ -681,7 +674,7 @@ export default function PlanningPage() {
               open={confirmSheetOpen}
               onOpenChange={setConfirmSheetOpen}
               title="Confirmar saldo não positivo"
-              description="Your projected balance is negative or zero. Are you sure you want to confirm planning?"
+              description="Seu saldo projetado está negativo ou zerado. Confirme apenas se quiser concluir o planejamento."
             >
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -717,8 +710,7 @@ export default function PlanningPage() {
                     className="rounded-md bg-surface px-3 py-2"
                     key={snapshot.id}
                   >
-                    {snapshot.mes}: saldo projetado R${" "}
-                    {Number(snapshot.saldo_projetado).toFixed(2)}
+                    {formatMonthLabel(snapshot.mes)}: saldo projetado {formatCurrency(snapshot.saldo_projetado)}
                   </li>
                 ))}
                 {snapshots.length === 0 && (
@@ -735,6 +727,7 @@ export default function PlanningPage() {
           <Button
             type="button"
             variant="outline"
+            className="w-full sm:w-auto"
             disabled={!canGoPrev}
             onClick={() => setStep((prev) => prev - 1)}
           >
@@ -745,6 +738,7 @@ export default function PlanningPage() {
           </p>
           <Button
             type="button"
+            className="w-full sm:w-auto"
             disabled={!canGoNext}
             onClick={() => setStep((prev) => prev + 1)}
           >

@@ -67,7 +67,7 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       );
       reset();
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Upload failed.");
+      setUploadError(error instanceof Error ? error.message : "Falha no envio.");
     } finally {
       window.setTimeout(() => setUploadProgress(null), 400);
     }
@@ -86,7 +86,7 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       await deleteDocument(document.id);
     } catch (error) {
       setDocuments(previousDocuments);
-      setFetchError(error instanceof Error ? error.message : "Delete failed.");
+      setFetchError(error instanceof Error ? error.message : "Falha ao excluir documento.");
     } finally {
       setBusyDeleteId(null);
     }
@@ -113,25 +113,25 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl text-foreground">Document library</h2>
+          <h2 className="text-xl text-foreground">Biblioteca de documentos</h2>
           <p className="text-sm text-muted-foreground">
-            {readyDocuments.length} ready document(s) available for AI search.
+            {readyDocuments.length} documento(s) pronto(s) disponível(is) para busca com IA.
           </p>
         </div>
         <Button disabled={isLoading} size="sm" variant="outline" onClick={() => void loadDocuments()}>
-          Refresh
+          Atualizar
         </Button>
       </div>
 
       {fetchError && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{fetchError}</p>}
 
       {isLoading ? (
-        <Card className="text-sm text-muted-foreground">Loading documents...</Card>
+        <Card className="text-sm text-muted-foreground">Carregando documentos...</Card>
       ) : documents.length === 0 ? (
         <Card className="space-y-2 text-center">
-          <p className="text-lg text-foreground">No documents yet</p>
+          <p className="text-lg text-foreground">Nenhum documento ainda</p>
           <p className="text-sm text-muted-foreground">
-            Upload payslips, bills, or bank statements to start asking questions.
+            Envie holerites, contas ou extratos para começar a fazer perguntas.
           </p>
         </Card>
       ) : (

@@ -28,18 +28,18 @@ export default function TransactionSheet({
           className={`fixed z-50 flex w-full flex-col bg-surface-elevated shadow-elevated outline-none transition-transform duration-300 ease-out ${
             largeScreen
               ? "left-1/2 top-1/2 max-h-[min(82vh,880px)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-3xl"
-              : "inset-x-0 bottom-0 mx-auto max-h-[85dvh] max-w-screen-sm rounded-t-3xl"
+              : "inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-screen-sm rounded-t-3xl"
           }`}
           data-sheet-mode={largeScreen ? "dialog" : "drawer"}
         >
           <div className={`sticky top-0 z-10 bg-surface-elevated px-4 pb-3 pt-4 sm:px-5 ${largeScreen ? "rounded-t-3xl" : "rounded-t-3xl"}`}>
-            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/35" />
             <Drawer.Title className="font-display text-lg text-foreground">{title}</Drawer.Title>
             <Drawer.Description className="mt-1 font-body text-sm text-foreground/70">
               {description}
             </Drawer.Description>
           </div>
-          <div className="overflow-y-auto px-4 pb-6 sm:px-5 sm:pb-8">
+          <div className="overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] sm:px-5 sm:pb-8">
             <div className="pt-1">{children}</div>
           </div>
         </Drawer.Content>

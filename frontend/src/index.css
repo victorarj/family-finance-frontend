@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 :root {
+  --mobile-nav-height: 78px;
   --background: 40 20% 97%;
   --foreground: 220 20% 14%;
   --card: 0 0% 100%;
@@ -66,14 +67,17 @@
 
   html {
     min-width: 320px;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background font-body text-foreground;
+    min-height: 100dvh;
+    overflow-x: hidden;
   }
 
   #root {
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1,
@@ -90,5 +94,39 @@
   select,
   textarea {
     font: inherit;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shake-x {
+    animation: shake-x 220ms ease-in-out;
+  }
+}
+
+@keyframes shake-x {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
   }
 }

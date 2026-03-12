@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { create, update } from "../apis/income";
 import type { Income } from "../types";
 import Button from "./Button";
 import FormField from "./FormField";
 import Input from "./Input";
 import TextArea from "./TextArea";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/formatters";
 
 interface IncomeFormProps {
   income?: Income | null;
@@ -47,9 +48,12 @@ export default function IncomeForm({
   onSaved,
   onCancel,
 }: IncomeFormProps) {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [form, setForm] = useState<Income>(initialIncome(currentUserEmail));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitShake, setSubmitShake] = useState(false);
+  const submitDisabled = loading || form.valor <= 0 || !form.nome.trim();
 
   useEffect(() => {
     setForm(income ? normalizeIncome(income) : initialIncome(currentUserEmail));
@@ -79,12 +83,25 @@ export default function IncomeForm({
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
       {error && (
         <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">
           {error}
         </p>
       )}
+
+      <FormField label="Valor" required>
+        <Input
+          inputMode="decimal"
+          pattern="[0-9,]*"
+          value={formatCurrencyInput(form.valor)}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, valor: parseCurrencyInput(e.target.value) }))
+          }
+          required
+          disabled={loading}
+        />
+      </FormField>
 
       <FormField label="Nome da receita" required>
         <Input
@@ -99,18 +116,6 @@ export default function IncomeForm({
       </FormField>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <FormField label="Valor" required>
-          <Input
-            type="number"
-            step="0.01"
-            value={form.valor}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, valor: Number(e.target.value) }))
-            }
-            required
-            disabled={loading}
-          />
-        </FormField>
         <FormField label="Data de recebimento">
           <Input
             type="date"
@@ -150,10 +155,28 @@ export default function IncomeForm({
         />
       </FormField>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" disabled={loading}>
-          {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
-        </Button>
+      <div className={`sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 ${submitShake ? "shake-x" : ""}`}>
+        <div
+          onAnimationEnd={() => setSubmitShake(false)}
+          onClick={() => {
+            if (!submitDisabled) return;
+            setSubmitShake(false);
+            window.requestAnimationFrame(() => setSubmitShake(true));
+          }}
+        >
+          <Button
+            type="button"
+            aria-disabled={submitDisabled}
+            className={submitDisabled ? "opacity-50" : ""}
+            disabled={loading}
+            onClick={() => {
+              if (submitDisabled) return;
+              formRef.current?.requestSubmit();
+            }}
+          >
+            {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
+          </Button>
+        </div>
         <Button
           type="button"
           variant="ghost"

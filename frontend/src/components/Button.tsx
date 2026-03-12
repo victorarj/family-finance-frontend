@@ -23,10 +23,10 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-10 px-4 py-2 text-sm",
-  lg: "h-11 px-6 text-base",
-  icon: "h-10 w-10",
+  sm: "h-11 px-3 text-sm",
+  md: "h-11 px-4 py-2 text-sm",
+  lg: "h-12 px-6 text-base",
+  icon: "h-11 w-11",
 };
 
 function cn(...classes: Array<string | undefined | false>) {

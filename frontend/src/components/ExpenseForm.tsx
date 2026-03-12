@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { list as listBankAccounts } from "../apis/bankAccounts";
 import { list as listCategories } from "../apis/categories";
@@ -8,9 +8,11 @@ import type { BankAccount, Category, Expense, Priority } from "../types";
 import { normalizeDisplayText } from "../utils/text";
 import Button from "./Button";
 import FormField from "./FormField";
+import { ChevronDownIcon, ChevronRightIcon } from "./Icons";
 import Input from "./Input";
 import Select from "./Select";
 import TextArea from "./TextArea";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/formatters";
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -70,8 +72,11 @@ function findDefaultIdByName<T extends { id?: number; nome?: string; nome_conta?
 }
 
 export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCancel }: ExpenseFormProps) {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [form, setForm] = useState<Expense>(initialExpense(currentUserEmail));
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [dismissedBankWarning, setDismissedBankWarning] = useState(false);
+  const [submitShake, setSubmitShake] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [priorities, setPriorities] = useState<Priority[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
@@ -130,10 +135,17 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   useEffect(() => {
     setForm(expense ? normalizeExpense(expense) : initialExpense(currentUserEmail));
     setShowAdvanced(Boolean(expense));
+    setDismissedBankWarning(false);
   }, [expense, currentUserEmail]);
 
   const derivedMonthlyValue =
     form.numero_parcelas > 0 ? Number((form.valor_total / form.numero_parcelas).toFixed(2)) : form.valor_total;
+  const submitDisabled =
+    loading ||
+    form.valor_total <= 0 ||
+    form.categoria_id <= 0 ||
+    !form.nome.trim() ||
+    (!expense && !hasSelectableBankAccount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,22 +175,15 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
-      {!expense && !hasSelectableBankAccount && (
-        <div className="rounded-md border border-border bg-surface px-3 py-3 text-sm text-muted-foreground">
-          Nenhuma conta bancária ativa disponível.{" "}
-          <Link className="text-primary hover:underline" to="/settings/bank-accounts">
-            Criar conta agora
-          </Link>
-        </div>
-      )}
 
-      <FormField label="Nome da despesa" required>
+      <FormField label="Valor" required>
         <Input
-          type="text"
-          value={form.nome}
-          onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
+          inputMode="decimal"
+          pattern="[0-9,]*"
+          value={formatCurrencyInput(form.valor_total)}
+          onChange={(e) => setForm((prev) => ({ ...prev, valor_total: parseCurrencyInput(e.target.value) }))}
           required
           disabled={loading}
         />
@@ -200,26 +205,45 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </Select>
       </FormField>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <FormField label="Valor" required>
-          <Input
-            type="number"
-            step="0.01"
-            value={form.valor_total}
-            onChange={(e) => setForm((prev) => ({ ...prev, valor_total: Number(e.target.value) }))}
-            required
-            disabled={loading}
-          />
-        </FormField>
-      </div>
+      <FormField label="Nome da despesa" required>
+        <Input
+          type="text"
+          value={form.nome}
+          onChange={(e) => setForm((prev) => ({ ...prev, nome: e.target.value }))}
+          required
+          disabled={loading}
+        />
+      </FormField>
+
+      {!expense && !hasSelectableBankAccount && !dismissedBankWarning && (
+        <div className="rounded-2xl border border-warning/40 bg-warning-soft px-3 py-3 text-sm text-foreground">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Nenhuma conta bancária ativa disponível.{" "}
+              <Link className="text-primary hover:underline" to="/settings/bank-accounts">
+                Criar conta agora
+              </Link>
+            </p>
+            <button
+              type="button"
+              aria-label="Fechar aviso"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"
+              onClick={() => setDismissedBankWarning(true)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <button
         type="button"
-        className="text-sm font-medium text-foreground/80 hover:text-foreground"
+        className="inline-flex min-h-[44px] items-center gap-2 text-sm font-medium text-foreground/80 hover:text-foreground"
         onClick={() => setShowAdvanced((prev) => !prev)}
         disabled={loading}
       >
-        {showAdvanced ? "▼ Opções avançadas" : "▶ Opções avançadas"}
+        {showAdvanced ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+        <span>Opções avançadas</span>
       </button>
 
       {showAdvanced && (
@@ -277,9 +301,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
           <FormField label="Valor mensal (calculado)">
             <Input
               className="bg-muted"
-              type="number"
-              step="0.01"
-              value={derivedMonthlyValue}
+              inputMode="decimal"
+              value={formatCurrencyInput(derivedMonthlyValue)}
               readOnly
               disabled
             />
@@ -373,10 +396,28 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" disabled={loading || (!expense && !hasSelectableBankAccount)}>
-          {loading ? "Salvando..." : expense ? "Atualizar" : "Adicionar"}
-        </Button>
+      <div className={`sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 ${submitShake ? "shake-x" : ""}`}>
+        <div
+          onAnimationEnd={() => setSubmitShake(false)}
+          onClick={() => {
+            if (!submitDisabled) return;
+            setSubmitShake(false);
+            window.requestAnimationFrame(() => setSubmitShake(true));
+          }}
+        >
+          <Button
+            type="button"
+            aria-disabled={submitDisabled}
+            className={submitDisabled ? "opacity-50" : ""}
+            disabled={loading}
+            onClick={() => {
+              if (submitDisabled) return;
+              formRef.current?.requestSubmit();
+            }}
+          >
+            {loading ? "Salvando..." : expense ? "Atualizar" : "Adicionar"}
+          </Button>
+        </div>
         <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
           Cancelar
         </Button>

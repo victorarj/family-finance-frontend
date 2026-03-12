@@ -40,15 +40,15 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
 
   const validateFile = (file: File | null) => {
     if (!file) {
-      setLocalError("Choose a PDF, PNG, or JPEG file.");
+      setLocalError("Escolha um arquivo PDF, PNG ou JPEG.");
       return;
     }
     if (!acceptedTypes.includes(file.type)) {
-      setLocalError("Only PDF, PNG, and JPEG files are supported.");
+      setLocalError("Apenas arquivos PDF, PNG e JPEG são suportados.");
       return;
     }
     if (file.size > maxFileSize) {
-      setLocalError("File size must be 10MB or less.");
+      setLocalError("O arquivo deve ter no máximo 10 MB.");
       return;
     }
     setSelectedFile(file);
@@ -58,9 +58,9 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
   return (
     <Card className="space-y-4 border border-dashed border-border/80 bg-secondary/30">
       <div>
-        <h3 className="text-lg text-foreground">Upload documents</h3>
+        <h3 className="text-lg text-foreground">Enviar documentos</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Drag a file here or browse your device. Supported: PDF, PNG, JPEG up to 10MB.
+          Arraste um arquivo aqui ou escolha no dispositivo. Suporte a PDF, PNG e JPEG até 10 MB.
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
           ⤴
         </span>
         <span className="mt-3 text-sm font-medium text-foreground">
-          {selectedFile ? selectedFile.name : "Drop a file or click to browse"}
+          {selectedFile ? selectedFile.name : "Solte um arquivo ou toque para selecionar"}
         </span>
         <span className="mt-1 text-xs text-muted-foreground">
           {selectedFile ? formatFileSize(selectedFile.size) : "PDF, PNG, JPEG"}
@@ -119,16 +119,16 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
         onChange={(event) => validateFile(event.target.files?.[0] || null)}
       />
 
-      <FormField label="Source type" className="max-w-56">
+      <FormField label="Tipo de documento" className="max-w-56">
         <Select
           disabled={busy}
           value={sourceType}
           onChange={(event) => setSourceType(event.target.value as SourceType)}
         >
-          <option value={SourceType.Other}>Other</option>
-          <option value={SourceType.Payslip}>Payslip</option>
-          <option value={SourceType.Bill}>Bill</option>
-          <option value={SourceType.BankStatement}>Bank statement</option>
+          <option value={SourceType.Other}>Outro</option>
+          <option value={SourceType.Payslip}>Holerite</option>
+          <option value={SourceType.Bill}>Conta</option>
+          <option value={SourceType.BankStatement}>Extrato bancário</option>
         </Select>
       </FormField>
 
@@ -154,7 +154,7 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground">Uploading... {progress}%</p>
+          <p className="text-xs text-muted-foreground">Enviando... {progress}%</p>
         </div>
       )}
 
@@ -163,10 +163,10 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
           disabled={busy || !selectedFile}
           onClick={() => selectedFile && void onUpload(selectedFile, sourceType, reset)}
         >
-          Confirm upload
+          Confirmar envio
         </Button>
         <Button disabled={busy || !selectedFile} variant="ghost" onClick={reset}>
-          Clear
+          Limpar
         </Button>
       </div>
     </Card>

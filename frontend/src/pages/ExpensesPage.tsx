@@ -46,15 +46,15 @@ export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
 
   return (
     <Container size="xl">
-      <section className="space-y-5 lg:space-y-6">
-        <Card>
-          <h2 className="text-xl">Despesas</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Registre gastos e mantenha o controle do fluxo mensal.</p>
-        </Card>
-
-        <Card>
-          <h3 className="mb-3 text-lg">Lista de despesas</h3>
-          <ExpenseList onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
+      <section className="space-y-3 lg:space-y-6">
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl">Despesas</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Registre gastos e mantenha o controle do fluxo mensal.</p>
+            </div>
+          </div>
+          <ExpenseList onCreate={openCreateSheet} onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
         </Card>
       </section>
 

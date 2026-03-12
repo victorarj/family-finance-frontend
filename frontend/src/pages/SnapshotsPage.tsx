@@ -3,13 +3,10 @@ import Card from "../components/Card";
 import Container from "../components/Container";
 import Button from "../components/Button";
 import TransactionSheet from "../components/TransactionSheet";
+import { RetryIcon } from "../components/Icons";
 import { getDetails, list } from "../apis/monthlySnapshots";
 import type { SnapshotDetails, SnapshotMensal } from "../types";
-
-function formatMoney(value: unknown) {
-  const amount = Number(value);
-  return Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
-}
+import { formatCurrency, formatMonthLabel } from "../utils/formatters";
 
 export default function SnapshotsPage() {
   const [snapshots, setSnapshots] = useState<SnapshotMensal[]>([]);
@@ -17,25 +14,38 @@ export default function SnapshotsPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loadSnapshots = async () => {
+    try {
+      setLoading(true);
+      setLoadingTimedOut(false);
+      const response = await list();
+      setSnapshots(Array.isArray(response.data) ? response.data : []);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Falha ao carregar snapshots",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadSnapshots = async () => {
-      try {
-        setLoading(true);
-        const response = await list();
-        setSnapshots(Array.isArray(response.data) ? response.data : []);
-        setError(null);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Falha ao carregar snapshots",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
     void loadSnapshots();
   }, []);
+
+  useEffect(() => {
+    if (!loading || snapshots.length > 0) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      setLoadingTimedOut(true);
+      setLoading(false);
+      setError("O carregamento demorou demais. Tente novamente.");
+    }, 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [loading, snapshots.length]);
 
   const onViewDetails = async (id?: number) => {
     if (!id) return;
@@ -61,7 +71,7 @@ export default function SnapshotsPage() {
         <Card>
           <h2 className="text-xl">Snapshots</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Historico mensal do planejamento fechado.
+            Histórico mensal do planejamento fechado.
           </p>
         </Card>
 
@@ -72,9 +82,16 @@ export default function SnapshotsPage() {
         )}
 
         <Card className="space-y-3">
-          <h3 className="text-lg">Historico</h3>
+          <h3 className="text-lg">Histórico</h3>
           {loading ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : loadingTimedOut ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">Não foi possível carregar o histórico.</p>
+              <Button leftIcon={<RetryIcon className="h-4 w-4" />} size="sm" variant="outline" onClick={() => void loadSnapshots()}>
+                Tentar novamente
+              </Button>
+            </div>
           ) : snapshots.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhum snapshot encontrado.
@@ -87,8 +104,8 @@ export default function SnapshotsPage() {
                   className="flex flex-col gap-3 rounded-md bg-surface px-3 py-3 md:flex-row md:items-center md:justify-between"
                 >
                   <div className="text-sm">
-                    <p className="font-medium">{snapshot.mes}</p>
-                    <p className="text-muted-foreground">Completed</p>
+                    <p className="font-medium">{formatMonthLabel(snapshot.mes)}</p>
+                    <p className="text-muted-foreground">Concluído</p>
                   </div>
                   <Button
                     type="button"
@@ -96,7 +113,7 @@ export default function SnapshotsPage() {
                     variant="outline"
                     onClick={() => void onViewDetails(snapshot.id)}
                   >
-                    View
+                    Ver detalhes
                   </Button>
                 </li>
               ))}
@@ -115,48 +132,48 @@ export default function SnapshotsPage() {
         }}
         title={
           selected?.snapshot?.mes
-            ? `Snapshot: ${selected.snapshot.mes}`
+            ? `Snapshot: ${formatMonthLabel(selected.snapshot.mes)}`
             : "Detalhes do snapshot"
         }
-        description="Comparativo entre planejamento fechado e execucao real do mes."
+        description="Comparativo entre planejamento fechado e execução real do mês."
       >
         {detailsLoading || !selected ? (
           <p className="text-sm text-muted-foreground">Carregando detalhes...</p>
         ) : (
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-surface px-3 py-2">
-              <p className="text-muted-foreground">Income planned</p>
+              <p className="text-muted-foreground">Receita planejada</p>
               <p className="font-semibold text-income">
-                R$ {formatMoney(selected.planned_income)}
+                {formatCurrency(selected.planned_income)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
-              <p className="text-muted-foreground">Expenses planned</p>
+              <p className="text-muted-foreground">Despesas planejadas</p>
               <p className="font-semibold text-expense">
-                R$ {formatMoney(selected.planned_expenses)}
+                {formatCurrency(selected.planned_expenses)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
-              <p className="text-muted-foreground">Projected balance</p>
+              <p className="text-muted-foreground">Saldo projetado</p>
               <p className="font-semibold">
-                R$ {formatMoney(selected.projected_balance)}
+                {formatCurrency(selected.projected_balance)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
-              <p className="text-muted-foreground">Actual income</p>
+              <p className="text-muted-foreground">Receita realizada</p>
               <p className="font-semibold text-income">
-                R$ {formatMoney(selected.actual_income)}
+                {formatCurrency(selected.actual_income)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
-              <p className="text-muted-foreground">Actual expenses</p>
+              <p className="text-muted-foreground">Despesas realizadas</p>
               <p className="font-semibold text-expense">
-                R$ {formatMoney(selected.actual_expenses)}
+                {formatCurrency(selected.actual_expenses)}
               </p>
             </div>
             <div className="rounded-md bg-surface px-3 py-2">
               <p className="text-muted-foreground">
-                Difference (planned vs actual)
+                Diferença (planejado vs realizado)
               </p>
               <p
                 className={`font-semibold ${
@@ -165,7 +182,7 @@ export default function SnapshotsPage() {
                     : "text-expense"
                 }`}
               >
-                R$ {formatMoney(selected.planned_vs_actual_diff)}
+                {formatCurrency(selected.planned_vs_actual_diff)}
               </p>
             </div>
           </div>

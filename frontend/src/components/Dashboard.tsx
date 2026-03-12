@@ -3,6 +3,8 @@ import { getOverview } from "../apis/dashboard";
 import type { DashboardOverview } from "../types";
 import Card from "./Card";
 import Container from "./Container";
+import MonthNavigator from "./MonthNavigator";
+import { formatCurrency, getMonthStatusLabel } from "../utils/formatters";
 
 function monthNow() {
   return new Date().toISOString().slice(0, 7);
@@ -12,14 +14,15 @@ type MetricCardProps = {
   title: string;
   value: string;
   tone?: "income" | "expense" | "default";
+  className?: string;
 };
 
-function MetricCard({ title, value, tone = "default" }: MetricCardProps) {
+function MetricCard({ title, value, tone = "default", className }: MetricCardProps) {
   const toneClass = tone === "income" ? "text-income" : tone === "expense" ? "text-expense" : "text-foreground";
   return (
-    <Card className="space-y-2">
+    <Card className={`space-y-1.5 ${className || ""}`.trim()}>
       <h3 className="text-sm text-muted-foreground">{title}</h3>
-      <p className={`text-3xl font-display ${toneClass}`}>{value}</p>
+      <p className={`text-2xl font-display ${toneClass}`}>{value}</p>
     </Card>
   );
 }
@@ -57,31 +60,31 @@ function PlannedActualBlock({
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Receita planejada</p>
           <p className="font-display text-lg text-foreground">
-            R$ {plannedIncome.toFixed(2)}
+            {formatCurrency(plannedIncome)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Receita realizada</p>
           <p className="font-display text-lg text-foreground">
-            R$ {(actualIncome ?? 0).toFixed(2)}
+            {formatCurrency(actualIncome ?? 0)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Diferença final</p>
           <p className={`font-display text-lg ${varianceTone}`}>
-            {variance == null ? "—" : `R$ ${variance.toFixed(2)}`}
+            {variance == null ? "—" : formatCurrency(variance)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Despesa planejada</p>
           <p className="font-display text-lg text-foreground">
-            R$ {plannedExpenses.toFixed(2)}
+            {formatCurrency(plannedExpenses)}
           </p>
         </div>
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Despesa realizada</p>
           <p className="font-display text-lg text-foreground">
-            R$ {(actualExpenses ?? 0).toFixed(2)}
+            {formatCurrency(actualExpenses ?? 0)}
           </p>
         </div>
       </div>
@@ -148,37 +151,31 @@ export default function Dashboard() {
 
   return (
     <Container size="xl">
-      <section className="space-y-5 lg:space-y-6">
+      <section className="space-y-2.5 lg:space-y-6">
         <Card>
           <h2 className="text-xl">Dashboard Financeiro</h2>
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <label className="flex w-full max-w-xs flex-col gap-1 text-sm text-muted-foreground">
-              Mês
-              <input
-                className="rounded-md border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              />
-            </label>
-            <span className={`rounded-md px-3 py-2 text-sm font-medium ${statusBadgeClasses(overview.month_status)}`}>
-              Status: {overview.month_status}
+          <div className="mt-3 flex flex-col gap-2">
+            <MonthNavigator month={month} onChange={setMonth} />
+            <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-sm font-medium ${statusBadgeClasses(overview.month_status)}`}>
+              {getMonthStatusLabel(overview.month_status)}
             </span>
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Receitas (MTD)" value={`R$ ${overview.income_mtd.toFixed(2)}`} tone="income" />
-          <MetricCard title="Despesas (MTD)" value={`R$ ${overview.expenses_mtd.toFixed(2)}`} tone="expense" />
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard title="Receitas (MTD)" value={formatCurrency(overview.income_mtd)} tone="income" />
+          <MetricCard title="Despesas (MTD)" value={formatCurrency(overview.expenses_mtd)} tone="expense" />
           <MetricCard
             title="Saldo"
-            value={`R$ ${overview.balance.toFixed(2)}`}
+            value={formatCurrency(overview.balance)}
             tone={overview.balance >= 0 ? "income" : "expense"}
+            className="col-span-2"
           />
           <MetricCard
             title="Projeção"
-            value={`R$ ${overview.projection.toFixed(2)}`}
+            value={formatCurrency(overview.projection)}
             tone={overview.projection >= 0 ? "income" : "expense"}
+            className="col-span-2"
           />
           {/*
           <MetricCard

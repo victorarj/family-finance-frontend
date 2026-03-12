@@ -11,9 +11,9 @@ export default function DocumentsPage() {
     <Container size="xl">
       <div className="space-y-6 py-6 lg:space-y-8">
         <div className="space-y-2">
-          <h2 className="text-2xl text-foreground">Document Intelligence</h2>
+          <h2 className="text-2xl text-foreground">Inteligência de documentos</h2>
           <p className="text-sm text-muted-foreground">
-            Upload financial documents, monitor processing, and ask AI questions across ready files.
+            Envie documentos financeiros, acompanhe o processamento e faça perguntas com IA.
           </p>
         </div>
 

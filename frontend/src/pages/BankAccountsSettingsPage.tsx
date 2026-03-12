@@ -96,7 +96,7 @@ export default function BankAccountsSettingsPage() {
         <Card className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm uppercase tracking-[0.2em] text-primary">Settings</p>
+              <p className="text-sm uppercase tracking-[0.2em] text-primary">Configurações</p>
               <h2 className="mt-2 text-2xl">Contas bancárias</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Crie, edite e desative contas. Contas com histórico continuam preservadas e não podem ser excluídas.
