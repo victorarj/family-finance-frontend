@@ -5,6 +5,7 @@ import BottomNav from "./components/BottomNav";
 import Button from "./components/Button";
 import Container from "./components/Container";
 import Dashboard from "./components/Dashboard";
+import DocumentsPage from "./features/documents/DocumentsPage";
 import BankAccountsSettingsPage from "./pages/BankAccountsSettingsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import IncomePage from "./pages/IncomePage";
@@ -100,6 +101,14 @@ function AppContent() {
           element={
             <RequireAuth>
               <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/documents"
+          element={
+            <RequireAuth>
+              <DocumentsPage />
             </RequireAuth>
           }
         />
