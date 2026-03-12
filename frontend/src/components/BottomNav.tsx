@@ -30,9 +30,10 @@ export default function BottomNav({
         className,
       )}
       aria-label="Bottom navigation"
+      data-testid="bottom-nav"
     >
       <div
-        className="mx-auto grid w-full max-w-[560px] gap-1 px-2 pb-2 pt-3"
+        className="mx-auto grid w-full max-w-screen-sm gap-1 px-2 pb-2 pt-3"
         style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
       >
         {items.map((item) => {

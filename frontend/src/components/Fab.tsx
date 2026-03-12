@@ -20,7 +20,7 @@ export default function Fab({ icon, onClick, label, className, type = "button", 
       aria-label={label}
       whileTap={{ scale: 0.96 }}
       className={cn(
-        "fixed bottom-4 right-4 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-fab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        "fixed bottom-4 right-4 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-fab focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 md:bottom-6 md:right-6 lg:bottom-8 lg:right-8",
         className,
       )}
       {...props}

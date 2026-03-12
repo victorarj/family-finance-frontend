@@ -163,7 +163,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   };
 
   return (
-    <form className="space-y-3" onSubmit={handleSubmit}>
+    <form className="space-y-4" onSubmit={handleSubmit}>
       {error && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>}
       {!expense && !hasSelectableBankAccount && (
         <div className="rounded-md border border-border bg-surface px-3 py-3 text-sm text-muted-foreground">
@@ -200,7 +200,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </Select>
       </FormField>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <FormField label="Valor" required>
           <Input
             type="number"
@@ -223,8 +223,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       </button>
 
       {showAdvanced && (
-        <div className="space-y-3 rounded-md border border-border bg-surface p-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-4 rounded-md border border-border bg-surface p-3 sm:p-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <FormField label="Data de início (opcional)">
               <Input
                 type="date"
@@ -245,7 +245,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             </FormField>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <FormField label="Número de parcelas" required>
               <Input
                 type="number"
@@ -285,7 +285,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             />
           </FormField>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <FormField label="Prioridade" required>
               <Select
                 value={form.prioridade_id}
@@ -337,7 +337,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <FormField label="Moeda" required>
               <Input
                 type="text"
@@ -373,7 +373,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={loading || (!expense && !hasSelectableBankAccount)}>
           {loading ? "Salvando..." : expense ? "Atualizar" : "Adicionar"}
         </Button>

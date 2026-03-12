@@ -30,8 +30,8 @@ export default function LoginPage() {
   };
 
   return (
-    <Container>
-      <div className="pt-10">
+    <Container size="sm">
+      <div className="pt-8 sm:pt-10">
         <Card className="space-y-4">
           <div>
             <h2 className="text-2xl">Entrar</h2>

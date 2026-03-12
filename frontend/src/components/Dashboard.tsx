@@ -53,7 +53,7 @@ function PlannedActualBlock({
   return (
     <Card className="space-y-3">
       <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
-      <div className="grid grid-cols-3 gap-2 text-sm">
+      <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-md bg-surface px-3 py-2">
           <p className="text-xs text-muted-foreground">Receita planejada</p>
           <p className="font-display text-lg text-foreground">
@@ -147,12 +147,12 @@ export default function Dashboard() {
   // const availableToSpend = overview.projection;
 
   return (
-    <Container>
-      <section className="space-y-4">
+    <Container size="xl">
+      <section className="space-y-5 lg:space-y-6">
         <Card>
           <h2 className="text-xl">Dashboard Financeiro</h2>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <label className="flex w-full max-w-xs flex-col gap-1 text-sm text-muted-foreground">
               Mês
               <input
                 className="rounded-md border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -167,7 +167,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard title="Receitas (MTD)" value={`R$ ${overview.income_mtd.toFixed(2)}`} tone="income" />
           <MetricCard title="Despesas (MTD)" value={`R$ ${overview.expenses_mtd.toFixed(2)}`} tone="expense" />
           <MetricCard

@@ -45,8 +45,8 @@ export default function IncomePage({ currentUserEmail }: IncomePageProps) {
   };
 
   return (
-    <Container>
-      <section className="space-y-4">
+    <Container size="xl">
+      <section className="space-y-5 lg:space-y-6">
         <Card>
           <h2 className="text-xl">Receitas</h2>
           <p className="mt-2 text-sm text-muted-foreground">Acompanhe entradas e mantenha previsibilidade financeira.</p>

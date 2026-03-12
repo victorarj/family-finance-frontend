@@ -111,7 +111,7 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
         progress={uploadProgress}
       />
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl text-foreground">Document library</h2>
           <p className="text-sm text-muted-foreground">

@@ -45,8 +45,8 @@ export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
   };
 
   return (
-    <Container>
-      <section className="space-y-4">
+    <Container size="xl">
+      <section className="space-y-5 lg:space-y-6">
         <Card>
           <h2 className="text-xl">Despesas</h2>
           <p className="mt-2 text-sm text-muted-foreground">Registre gastos e mantenha o controle do fluxo mensal.</p>

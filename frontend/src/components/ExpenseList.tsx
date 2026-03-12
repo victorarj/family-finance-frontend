@@ -68,10 +68,10 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:space-y-4">
       {items.map((expense) => (
         <Card key={expense.id} className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="font-medium text-foreground">{expense.nome}</p>
               <p className="text-sm text-muted-foreground">
@@ -81,7 +81,7 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
             {expense.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-md bg-surface px-3 py-2">
               <p className="text-muted-foreground">Total</p>
               <p className="font-semibold text-expense">
@@ -94,9 +94,17 @@ export default function ExpenseList({ onEdit, refreshTrigger }: ExpenseListProps
                 {expense.valor_mensal} {expense.moeda}
               </p>
             </div>
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Tipo</p>
+              <p className="font-semibold text-foreground">{expense.tipo_despesa || "fixa"}</p>
+            </div>
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Frequência</p>
+              <p className="font-semibold text-foreground">{expense.frequencia_pagamento || "mensal"}</p>
+            </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" disabled={expense.locked} onClick={() => onEdit(expense)}>
               Editar
             </Button>

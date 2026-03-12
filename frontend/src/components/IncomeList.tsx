@@ -68,10 +68,10 @@ export default function IncomeList({ onEdit, refreshTrigger }: IncomeListProps) 
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:space-y-4">
       {items.map((income) => (
         <Card key={income.id} className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="font-medium text-foreground">{income.nome}</p>
               <p className="text-sm text-muted-foreground">
@@ -81,14 +81,20 @@ export default function IncomeList({ onEdit, refreshTrigger }: IncomeListProps) 
             {income.locked && <span className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning">Mês fechado</span>}
           </div>
 
-          <div className="rounded-md bg-surface px-3 py-2 text-sm">
-            <p className="text-muted-foreground">Valor</p>
-            <p className="font-semibold text-income">
-              {income.valor} {income.moeda}
-            </p>
+          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Valor</p>
+              <p className="font-semibold text-income">
+                {income.valor} {income.moeda}
+              </p>
+            </div>
+            <div className="rounded-md bg-surface px-3 py-2">
+              <p className="text-muted-foreground">Recebimento</p>
+              <p className="font-semibold text-foreground">{formatDateLabel(income.data_recebimento)}</p>
+            </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" disabled={income.locked} onClick={() => onEdit(income)}>
               Editar
             </Button>

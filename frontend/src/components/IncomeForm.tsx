@@ -79,7 +79,7 @@ export default function IncomeForm({
   };
 
   return (
-    <form className="space-y-3" onSubmit={handleSubmit}>
+    <form className="space-y-4" onSubmit={handleSubmit}>
       {error && (
         <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">
           {error}
@@ -98,7 +98,7 @@ export default function IncomeForm({
         />
       </FormField>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <FormField label="Valor" required>
           <Input
             type="number"
@@ -124,7 +124,7 @@ export default function IncomeForm({
         </FormField>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <FormField label="Moeda">
           <Input
             type="text"
@@ -150,7 +150,7 @@ export default function IncomeForm({
         />
       </FormField>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={loading}>
           {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
         </Button>

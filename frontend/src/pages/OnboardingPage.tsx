@@ -178,7 +178,7 @@ export default function OnboardingPage() {
 
   if (isBootstrapping) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <Card>
           <p className="text-sm text-muted-foreground">Carregando onboarding...</p>
         </Card>
@@ -190,7 +190,7 @@ export default function OnboardingPage() {
   const hasAccounts = accounts.length > 0;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       <Card className="space-y-8 p-6 md:p-8">
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">

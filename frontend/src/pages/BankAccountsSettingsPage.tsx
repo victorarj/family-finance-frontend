@@ -91,7 +91,7 @@ export default function BankAccountsSettingsPage() {
   const inactiveAccounts = accounts.filter((account) => !account.ativo);
 
   return (
-    <Container>
+    <Container size="lg">
       <div className="space-y-4 py-6">
         <Card className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">

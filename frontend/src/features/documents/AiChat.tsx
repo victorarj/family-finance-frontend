@@ -107,7 +107,7 @@ export default function AiChat({ documents }: AiChatProps) {
   };
 
   return (
-    <section className="flex h-full min-h-[720px] flex-col gap-4">
+    <section className="flex min-h-[min(70vh,780px)] flex-col gap-4 lg:min-h-[min(76vh,860px)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl text-foreground">AI chat</h2>
@@ -134,7 +134,7 @@ export default function AiChat({ documents }: AiChatProps) {
             <div
               key={message.id}
               className={`space-y-2 rounded-2xl px-4 py-3 ${
-                message.role === "user" ? "ml-auto max-w-[85%] bg-primary text-background" : "mr-auto max-w-[92%] bg-secondary/50 text-foreground"
+                message.role === "user" ? "ml-auto max-w-[92%] bg-primary text-background sm:max-w-[85%]" : "mr-auto max-w-[96%] bg-secondary/50 text-foreground sm:max-w-[92%]"
               }`}
             >
               <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-wide">
@@ -174,7 +174,7 @@ export default function AiChat({ documents }: AiChatProps) {
           ))}
 
           {isLoading && (
-            <div className="mr-auto max-w-[92%] rounded-2xl bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+            <div className="mr-auto max-w-[96%] rounded-2xl bg-secondary/50 px-4 py-3 text-sm text-muted-foreground sm:max-w-[92%]">
               <p className="animate-pulse">Assistant is typing…</p>
             </div>
           )}
@@ -199,7 +199,7 @@ export default function AiChat({ documents }: AiChatProps) {
               }
             }}
           />
-          <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">Press Enter to send. Shift+Enter adds a new line.</p>
             <Button disabled={isLoading || !draft.trim()} onClick={() => void submitQuestion()}>
               Send

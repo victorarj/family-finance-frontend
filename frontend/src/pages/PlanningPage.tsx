@@ -311,14 +311,14 @@ export default function PlanningPage() {
 
   return (
     <PlanningLayout>
-      <section className="space-y-4">
+      <section className="space-y-5 lg:space-y-6">
         <Card className="space-y-3">
           <h2 className="text-xl">Planejamento mensal</h2>
           <p className="text-sm text-muted-foreground">
             Siga o fluxo em etapas para estruturar seu mês antes de executar
             despesas e receitas.
           </p>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
             {STEPS.map((label, idx) => {
               const active = idx === step;
               const done = idx < step;
@@ -327,7 +327,7 @@ export default function PlanningPage() {
                   key={label}
                   type="button"
                   onClick={() => setStep(idx)}
-                  className={`rounded-md px-2 py-2 text-xs ${
+                  className={`min-w-[8.5rem] rounded-md px-3 py-2 text-left text-xs md:min-w-0 md:text-center ${
                     active
                       ? "bg-primary text-background"
                       : done
@@ -376,7 +376,7 @@ export default function PlanningPage() {
               editável a qualquer momento.
             </p>
             <form
-              className="grid grid-cols-1 gap-2 sm:grid-cols-4"
+              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
               onSubmit={editingRecurringId ? onUpdateRecurring : onCreateRecurring}
             >
               <Select
@@ -424,7 +424,7 @@ export default function PlanningPage() {
               </Button>
             </form>
             {editingRecurringId && (
-              <div className="flex">
+              <div className="flex flex-wrap">
                 <Button
                   type="button"
                   variant="ghost"
@@ -445,12 +445,12 @@ export default function PlanningPage() {
                     className="rounded-md bg-surface px-3 py-2"
                     key={item.id}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <p>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <p className="min-w-0">
                         {item.tipo} - {item.descricao}: R${" "}
                         {Number(item.valor).toFixed(2)}
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           size="sm"
@@ -492,7 +492,7 @@ export default function PlanningPage() {
               recorrentes (ex.: supermercado, restaurantes, compras).
             </p>
             <form
-              className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
               onSubmit={onCreateBudget}
             >
               <Select
@@ -533,7 +533,7 @@ export default function PlanningPage() {
             <ul className="space-y-2 text-sm text-foreground">
               {budgets.map((budget) => (
                 <li
-                  className="space-y-2 rounded-md bg-surface px-3 py-2"
+                  className="space-y-2 rounded-md bg-surface px-3 py-3"
                   key={budget.id || `${budget.mes}-${budget.categoria_id}`}
                 >
                   <p className="text-muted-foreground">
@@ -620,7 +620,7 @@ export default function PlanningPage() {
             </p>
             {projection ? (
               <div className="space-y-2">
-                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-md bg-surface px-3 py-2">
                     <p className="text-muted-foreground">Receita prevista</p>
                     <p className="font-semibold text-income">
@@ -647,7 +647,7 @@ export default function PlanningPage() {
                       R$ {formatMoney(projection.planned_variable)}
                     </p>
                   </div>
-                  <div className="rounded-md bg-surface px-3 py-2 sm:col-span-2">
+                  <div className="rounded-md bg-surface px-3 py-2 md:col-span-2 xl:col-span-4">
                     <p className="text-muted-foreground">Saldo projetado</p>
                     <p className={`font-semibold ${projectionTone}`}>
                       R$ {formatMoney(projection.projected_balance)}
@@ -688,7 +688,7 @@ export default function PlanningPage() {
                   Este mês será fechado com saldo projetado não positivo.
                   Confirme apenas se deseja realmente concluir o planejamento.
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
                     variant="destructive"
@@ -731,7 +731,7 @@ export default function PlanningPage() {
           </Card>
         )}
 
-        <Card className="flex items-center justify-between">
+        <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             variant="outline"

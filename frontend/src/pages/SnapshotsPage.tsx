@@ -56,8 +56,8 @@ export default function SnapshotsPage() {
   };
 
   return (
-    <Container>
-      <section className="space-y-4">
+    <Container size="lg">
+      <section className="space-y-5 lg:space-y-6">
         <Card>
           <h2 className="text-xl">Snapshots</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -84,7 +84,7 @@ export default function SnapshotsPage() {
               {snapshots.map((snapshot) => (
                 <li
                   key={snapshot.id}
-                  className="flex items-center justify-between rounded-md bg-surface px-3 py-2"
+                  className="flex flex-col gap-3 rounded-md bg-surface px-3 py-3 md:flex-row md:items-center md:justify-between"
                 >
                   <div className="text-sm">
                     <p className="font-medium">{snapshot.mes}</p>
