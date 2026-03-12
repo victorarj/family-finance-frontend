@@ -2,9 +2,9 @@ import { motion, type HTMLMotionProps } from "framer-motion";
 import type { ReactNode } from "react";
 
 type FabProps = Omit<HTMLMotionProps<"button">, "children"> & {
-  icon: ReactNode;
+  children: ReactNode;
   onClick?: () => void;
-  label: string;
+  "aria-label": string;
   className?: string;
 };
 
@@ -12,7 +12,7 @@ function cn(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function Fab({ icon, onClick, label, className, type = "button", ...props }: FabProps) {
+export default function Fab({ children, onClick, "aria-label": label, className, type = "button", ...props }: FabProps) {
   return (
     <motion.button
       type={type}
@@ -25,7 +25,7 @@ export default function Fab({ icon, onClick, label, className, type = "button", 
       )}
       {...props}
     >
-      {icon}
+      {children}
     </motion.button>
   );
 }

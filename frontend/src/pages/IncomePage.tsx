@@ -57,10 +57,11 @@ export default function IncomePage({ currentUserEmail }: IncomePageProps) {
       </section>
 
       <Fab
-        icon={<span aria-hidden className="text-2xl leading-none text-background">+</span>}
-        label="Adicionar receita"
+        aria-label="Adicionar receita"
         onClick={openCreateSheet}
-      />
+      >
+        <span aria-hidden className="text-2xl leading-none text-background">+</span>
+      </Fab>
 
       <TransactionSheet
         open={isSheetOpen}

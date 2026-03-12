@@ -59,10 +59,11 @@ export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
       </section>
 
       <Fab
-        icon={<span aria-hidden className="text-2xl leading-none text-background">+</span>}
-        label="Adicionar despesa"
+        aria-label="Adicionar despesa"
         onClick={openCreateSheet}
-      />
+      >
+        <span aria-hidden className="text-2xl leading-none text-background">+</span>
+      </Fab>
 
       <TransactionSheet
         open={isSheetOpen}

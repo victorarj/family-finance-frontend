@@ -29,6 +29,13 @@ import type {
 import Button from "../components/Button";
 import Card from "../components/Card";
 import FormField from "../components/FormField";
+import {
+  CalendarIcon,
+  CheckIcon,
+  RetryIcon,
+  TagIcon,
+  TrendingUpIcon,
+} from "../components/Icons";
 import Input from "../components/Input";
 import MonthNavigator from "../components/MonthNavigator";
 import PlanningLayout from "../components/PlanningLayout";
@@ -47,12 +54,12 @@ function toNumber(value: unknown) {
 }
 
 const STEPS = [
-  "Mês",
-  "Recorrentes",
-  "Orçamentos",
-  "Projeção",
-  "Confirmar",
-] as const;
+  { label: "Mês", icon: <CalendarIcon className="h-5 w-5" /> },
+  { label: "Recorrentes", icon: <RetryIcon className="h-5 w-5" /> },
+  { label: "Orçamentos", icon: <TagIcon className="h-5 w-5" /> },
+  { label: "Projeção", icon: <TrendingUpIcon className="h-5 w-5" /> },
+  { label: "Confirmar", icon: <CheckIcon className="h-5 w-5" /> },
+];
 
 function emptyRecurringForm(): TransacaoRecorrente {
   return {
@@ -61,6 +68,17 @@ function emptyRecurringForm(): TransacaoRecorrente {
     valor: 0,
     frequencia: "mensal",
   };
+}
+
+function getStatusBadgeClasses(status: MonthStatus) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return "bg-warning-soft text-warning";
+    case "COMPLETED":
+      return "bg-income-soft text-income";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
 }
 
 export default function PlanningPage() {
@@ -311,32 +329,56 @@ export default function PlanningPage() {
     <PlanningLayout>
       <section className="space-y-3 lg:space-y-6">
         <Card className="space-y-3">
-          <h2 className="text-xl">Planejamento mensal</h2>
-          <p className="text-sm text-muted-foreground">
-            Siga o fluxo em etapas para estruturar seu mês antes de executar
-            despesas e receitas.
-          </p>
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
-            {STEPS.map((label, idx) => {
-              const active = idx === step;
-              const done = idx < step;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => setStep(idx)}
-                  className={`min-w-[8.5rem] rounded-md px-3 py-2 text-left text-xs md:min-w-0 md:text-center ${
-                    active
-                      ? "bg-primary text-background"
-                      : done
-                        ? "bg-income-soft text-income"
-                        : "bg-surface text-muted-foreground"
-                  }`}
-                >
-                  {idx + 1}. {label}
-                </button>
-              );
-            })}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl">Planejamento mensal</h2>
+              <p className="text-sm text-muted-foreground">
+                {status === "NOT_STARTED"
+                  ? "Siga o fluxo em etapas para estruturar seu mês antes de executar despesas e receitas."
+                  : `Planejando ${formatMonthLabel(mes)}`}
+              </p>
+            </div>
+            <div
+              className={`inline-flex w-fit shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${getStatusBadgeClasses(
+                status,
+              )}`}
+            >
+              {getMonthStatusLabel(status)}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
+              {STEPS.map(({ label, icon }, idx) => {
+                const active = idx === step;
+                const done = idx < step;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setStep(idx)}
+                    className={`min-w-[4rem] rounded-md px-3 py-2 text-xs md:min-w-0 ${
+                      active
+                        ? "bg-primary text-background"
+                        : done
+                          ? "bg-income-soft text-income"
+                          : "bg-surface text-muted-foreground"
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-1 md:flex-row md:justify-center md:gap-2">
+                      {icon}
+                      <span className="hidden md:inline">{label}</span>
+                      <span className="md:hidden">{active ? label : ""}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="h-1 w-full rounded-full bg-surface">
+              <div
+                className="h-1 rounded-full bg-primary"
+                style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+              />
+            </div>
           </div>
         </Card>
 
@@ -355,9 +397,6 @@ export default function PlanningPage() {
             </p>
             <div className="flex flex-col gap-2">
               <MonthNavigator month={mes} onChange={setMes} />
-              <div className="rounded-full bg-surface px-3 py-2 text-sm">
-                Status atual: <strong>{getMonthStatusLabel(status)}</strong>
-              </div>
             </div>
           </Card>
         )}
@@ -668,6 +707,7 @@ export default function PlanningPage() {
               onClick={onCreateSnapshot}
               disabled={busy || status === "COMPLETED"}
             >
+              <CheckIcon className="mr-2 h-5 w-5" />
               Confirmar planejamento e criar snapshot
             </Button>
             <TransactionSheet
@@ -733,16 +773,27 @@ export default function PlanningPage() {
           >
             Voltar
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Etapa {step + 1} de {STEPS.length}
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {STEPS[step].label}
           </p>
           <Button
             type="button"
             className="w-full sm:w-auto"
-            disabled={!canGoNext}
-            onClick={() => setStep((prev) => prev + 1)}
+            disabled={!canGoNext && status === "COMPLETED"}
+            onClick={
+              step < STEPS.length - 1
+                ? () => setStep((prev) => prev + 1)
+                : () => onCreateSnapshot()
+            }
           >
-            Próximo
+            {step === STEPS.length - 1 ? (
+              <>
+                <CheckIcon className="mr-2 h-5 w-5" />
+                Confirmar
+              </>
+            ) : (
+              "Próximo"
+            )}
           </Button>
         </Card>
       </section>

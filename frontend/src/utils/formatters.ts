@@ -43,7 +43,8 @@ export function formatMonthLabel(month: string) {
   const [year, rawMonth] = month.split("-");
   const date = new Date(Number(year), Number(rawMonth) - 1, 1);
   const label = monthFormatter.format(date);
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  const processedLabel = label.replace(" de ", " ");
+  return processedLabel.charAt(0).toUpperCase() + processedLabel.slice(1);
 }
 
 export function shiftMonth(month: string, offset: number) {

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getOverview } from "../apis/dashboard";
 import type { DashboardOverview } from "../types";
 import Card from "./Card";
 import Container from "./Container";
+import Fab from "./Fab";
 import MonthNavigator from "./MonthNavigator";
 import { formatCurrency, getMonthStatusLabel } from "../utils/formatters";
 
@@ -17,8 +19,18 @@ type MetricCardProps = {
   className?: string;
 };
 
-function MetricCard({ title, value, tone = "default", className }: MetricCardProps) {
-  const toneClass = tone === "income" ? "text-income" : tone === "expense" ? "text-expense" : "text-foreground";
+function MetricCard({
+  title,
+  value,
+  tone = "default",
+  className,
+}: MetricCardProps) {
+  const toneClass =
+    tone === "income"
+      ? "text-income"
+      : tone === "expense"
+        ? "text-expense"
+        : "text-foreground";
   return (
     <Card className={`space-y-1.5 ${className || ""}`.trim()}>
       <h3 className="text-sm text-muted-foreground">{title}</h3>
@@ -42,13 +54,21 @@ function PlannedActualBlock({
   actualExpenses,
   variance,
 }: PlannedActualBlockProps) {
-  const varianceTone = variance == null ? "text-foreground" : variance >= 0 ? "text-income" : "text-expense";
+  const varianceTone =
+    variance == null
+      ? "text-foreground"
+      : variance >= 0
+        ? "text-income"
+        : "text-expense";
   if (plannedIncome == null || plannedExpenses == null) {
     return (
       <Card className="space-y-2">
-        <h3 className="text-sm text-muted-foreground">Planejado vs Realizado</h3>
+        <h3 className="text-sm text-muted-foreground">
+          Planejado vs Realizado
+        </h3>
         <p className="text-sm text-muted-foreground">
-          Sem baseline planejada para este mês. Crie um snapshot no fluxo de planejamento.
+          Sem baseline planejada para este mês. Crie um snapshot no fluxo de
+          planejamento.
         </p>
       </Card>
     );
@@ -103,6 +123,7 @@ function statusBadgeClasses(status: DashboardOverview["month_status"]) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(monthNow());
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +137,9 @@ export default function Dashboard() {
         setOverview(response.data);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao carregar dados");
+        setError(
+          err instanceof Error ? err.message : "Falha ao carregar dados",
+        );
       } finally {
         setLoading(false);
       }
@@ -156,15 +179,25 @@ export default function Dashboard() {
           <h2 className="text-xl">Dashboard Financeiro</h2>
           <div className="mt-3 flex flex-col gap-2">
             <MonthNavigator month={month} onChange={setMonth} />
-            <span className={`inline-flex w-fit rounded-full px-3 py-1.5 text-sm font-medium ${statusBadgeClasses(overview.month_status)}`}>
+            <span
+              className={`inline-flex w-fit rounded-full px-3 py-1.5 text-sm font-medium ${statusBadgeClasses(overview.month_status)}`}
+            >
               {getMonthStatusLabel(overview.month_status)}
             </span>
           </div>
         </Card>
 
         <div className="grid grid-cols-2 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard title="Receitas (MTD)" value={formatCurrency(overview.income_mtd)} tone="income" />
-          <MetricCard title="Despesas (MTD)" value={formatCurrency(overview.expenses_mtd)} tone="expense" />
+          <MetricCard
+            title="Receitas (MTD)"
+            value={formatCurrency(overview.income_mtd)}
+            tone="income"
+          />
+          <MetricCard
+            title="Despesas (MTD)"
+            value={formatCurrency(overview.expenses_mtd)}
+            tone="expense"
+          />
           <MetricCard
             title="Saldo"
             value={formatCurrency(overview.balance)}
@@ -194,6 +227,15 @@ export default function Dashboard() {
           variance={overview.planned_vs_actual_diff ?? null}
         />
       </section>
+      <Fab
+        aria-label="Start Planning"
+        onClick={() => navigate("/planning")}
+        className="w-auto px-6"
+      >
+        <span className="text-sm font-medium text-background">
+          Start Planning
+        </span>
+      </Fab>
     </Container>
   );
 }
