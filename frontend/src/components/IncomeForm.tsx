@@ -93,7 +93,6 @@ export default function IncomeForm({
       <FormField label="Valor" required>
         <Input
           inputMode="decimal"
-          pattern="[0-9,]*"
           value={formatCurrencyInput(form.valor)}
           onChange={(e) =>
             setForm((prev) => ({ ...prev, valor: parseCurrencyInput(e.target.value) }))

@@ -30,7 +30,7 @@ client.interceptors.response.use(
       // clear stale auth data; optional redirect
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
-      window.location.href = "/login";
+      window.location.href = "/#/login";
     }
     return Promise.reject(error);
   },

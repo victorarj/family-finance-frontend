@@ -181,7 +181,6 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       <FormField label="Valor" required>
         <Input
           inputMode="decimal"
-          pattern="[0-9,]*"
           value={formatCurrencyInput(form.valor_total)}
           onChange={(e) => setForm((prev) => ({ ...prev, valor_total: parseCurrencyInput(e.target.value) }))}
           required

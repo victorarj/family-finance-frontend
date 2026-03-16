@@ -25,6 +25,7 @@ export default function TransactionSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/30" />
         <Drawer.Content
+          data-vaul-no-drag
           className={`fixed z-50 flex w-full flex-col bg-surface-elevated shadow-elevated outline-none transition-transform duration-300 ease-out ${
             largeScreen
               ? "left-1/2 top-1/2 max-h-[min(82vh,880px)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-3xl"
@@ -32,9 +33,13 @@ export default function TransactionSheet({
           }`}
           data-sheet-mode={largeScreen ? "dialog" : "drawer"}
         >
-          <div className={`sticky top-0 z-10 bg-surface-elevated px-4 pb-3 pt-4 sm:px-5 ${largeScreen ? "rounded-t-3xl" : "rounded-t-3xl"}`}>
+          <div
+            className={`sticky top-0 z-10 bg-surface-elevated px-4 pb-3 pt-4 sm:px-5 ${largeScreen ? "rounded-t-3xl" : "rounded-t-3xl"}`}
+          >
             <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/35" />
-            <Drawer.Title className="font-display text-lg text-foreground">{title}</Drawer.Title>
+            <Drawer.Title className="font-display text-lg text-foreground">
+              {title}
+            </Drawer.Title>
             <Drawer.Description className="mt-1 font-body text-sm text-foreground/70">
               {description}
             </Drawer.Description>
