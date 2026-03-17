@@ -18,6 +18,16 @@ function sortDocuments(documents: Document[]) {
   });
 }
 
+function getReadyDocumentsSummary(count: number) {
+  if (count === 1) {
+    return "1 documento pronto para busca com IA.";
+  }
+
+  return `${count} documentos prontos para busca com IA.`;
+}
+
+const genericDocumentsError = "Não foi possível carregar os documentos. Tente novamente.";
+
 export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setLoading] = useState(true);
@@ -41,8 +51,8 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       setFetchError(null);
       const items = await listDocuments();
       setDocuments(sortDocuments(items));
-    } catch (error) {
-      setFetchError(error instanceof Error ? error.message : "Falha ao carregar documentos.");
+    } catch {
+      setFetchError(genericDocumentsError);
     } finally {
       setLoading(false);
     }
@@ -68,8 +78,8 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
         ]),
       );
       reset();
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Falha no envio.");
+    } catch {
+      setUploadError(genericDocumentsError);
     } finally {
       window.setTimeout(() => setUploadProgress(null), 400);
     }
@@ -86,9 +96,9 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
 
     try {
       await deleteDocument(document.id);
-    } catch (error) {
+    } catch {
       setDocuments(previousDocuments);
-      setFetchError(error instanceof Error ? error.message : "Falha ao excluir documento.");
+      setFetchError(genericDocumentsError);
     } finally {
       setBusyDeleteId(null);
     }
@@ -113,42 +123,47 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
         progress={uploadProgress}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl text-foreground">Biblioteca de documentos</h2>
-          <p className="text-sm text-muted-foreground">
-            {readyDocuments.length} documento(s) pronto(s) disponível(is) para busca com IA.
-          </p>
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg text-foreground">Biblioteca de documentos</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{getReadyDocumentsSummary(readyDocuments.length)}</p>
+          </div>
+          <Button disabled={isLoading} size="sm" variant="outline" onClick={() => void loadDocuments()}>
+            Atualizar
+          </Button>
         </div>
-        <Button disabled={isLoading} size="sm" variant="outline" onClick={() => void loadDocuments()}>
-          Atualizar
-        </Button>
-      </div>
 
-      {fetchError && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{fetchError}</p>}
+        {fetchError && (
+          <div className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">
+            <p>{fetchError}</p>
+            <Button className="mt-2" size="sm" variant="outline" onClick={() => void loadDocuments()}>
+              Tentar novamente
+            </Button>
+          </div>
+        )}
 
-      {isLoading ? (
-        <Card>
+        {isLoading ? (
           <LoadingState label="Carregando documentos..." />
-        </Card>
-      ) : documents.length === 0 ? (
-        <EmptyState
-          title="Nenhum documento enviado"
-          description="Envie holerites, contas ou extratos para começar a fazer perguntas."
-        />
-      ) : (
-        <div className="space-y-3">
-          {documents.map((document) => (
-            <DocumentCard
-              key={document.id}
-              busy={busyDeleteId === document.id}
-              document={document}
-              onDelete={handleDelete}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
-        </div>
-      )}
+        ) : documents.length === 0 ? (
+          <EmptyState
+            title="Nenhum documento enviado"
+            description="Envie holerites, contas ou extratos para começar a fazer perguntas."
+          />
+        ) : (
+          <div className="space-y-3">
+            {documents.map((document) => (
+              <DocumentCard
+                key={document.id}
+                busy={busyDeleteId === document.id}
+                document={document}
+                onDelete={handleDelete}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        )}
+      </Card>
     </section>
   );
 }
