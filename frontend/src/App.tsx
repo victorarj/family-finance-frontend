@@ -33,6 +33,7 @@ import {
 import { useViewportMode } from "./hooks/useViewport";
 import DocumentsPage from "./features/documents/DocumentsPage";
 import CategoriasPage from "./features/categories/CategoriasPage";
+import MoedasPage from "./features/currencies/MoedasPage";
 import BankAccountsSettingsPage from "./pages/BankAccountsSettingsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import IncomePage from "./pages/IncomePage";
@@ -322,6 +323,14 @@ function AppContent() {
                 element={
                   <RequireAuth>
                     <CategoriasPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/configuracoes/moedas"
+                element={
+                  <RequireAuth>
+                    <MoedasPage />
                   </RequireAuth>
                 }
               />

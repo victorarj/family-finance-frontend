@@ -191,6 +191,16 @@ export function TagIcon(props: IconProps) {
   );
 }
 
+export function CoinsIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <ellipse cx="12" cy="6" rx="6" ry="2.5" />
+      <path d="M6 6v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V6" />
+      <path d="M6 10v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4" />
+    </svg>
+  );
+}
+
 export function TrendingUpIcon(props: IconProps) {
   return (
     <svg {...iconProps(props)}>

@@ -5,6 +5,7 @@ import Container from "../components/Container";
 import {
   BankCardIcon,
   ChevronRightIcon,
+  CoinsIcon,
   DocumentIcon,
   TagIcon,
 } from "../components/Icons";
@@ -46,7 +47,7 @@ export default function SettingsHubPage() {
           </p>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
           <SettingsCard
             to="/configuracoes/documentos"
             icon={<DocumentIcon className="h-5 w-5" />}
@@ -64,6 +65,12 @@ export default function SettingsHubPage() {
             icon={<TagIcon className="h-5 w-5" />}
             title="Categorias"
             subtitle="Gerencie as categorias usadas em despesas e receitas"
+          />
+          <SettingsCard
+            to="/configuracoes/moedas"
+            icon={<CoinsIcon className="h-5 w-5" />}
+            title="Moedas"
+            subtitle="Gerencie as moedas disponíveis para contas e transações"
           />
         </div>
       </div>
