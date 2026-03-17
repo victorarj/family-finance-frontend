@@ -28,8 +28,8 @@ export default function TransactionSheet({
           data-vaul-no-drag
           className={`fixed z-modal flex w-full flex-col bg-surface-elevated shadow-elevated outline-none transition-transform duration-150 ease-out ${
             largeScreen
-              ? "left-1/2 top-1/2 max-h-[min(82vh,880px)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-3xl"
-              : "inset-x-0 bottom-0 mx-auto max-h-[calc(100dvh-env(safe-area-inset-top)-1rem)] max-w-screen-sm rounded-t-3xl"
+              ? "left-1/2 top-1/2 !h-auto max-h-[min(82vh,880px)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl"
+              : "inset-x-0 bottom-0 mx-auto max-h-[92dvh] max-w-screen-sm rounded-t-3xl"
           }`}
           data-sheet-mode={largeScreen ? "dialog" : "drawer"}
         >
