@@ -5,6 +5,7 @@ import type { DashboardOverview } from "../types";
 import Card from "./Card";
 import Container from "./Container";
 import Fab from "./Fab";
+import LoadingState from "./LoadingState";
 import MonthNavigator from "./MonthNavigator";
 import { formatCurrency, getMonthStatusLabel } from "../utils/formatters";
 
@@ -153,7 +154,9 @@ export default function Dashboard() {
       <Container>
         <Card>
           <h2 className="text-lg">Dashboard</h2>
-          <p className="mt-2 text-muted-foreground">Carregando...</p>
+          <div className="mt-2">
+            <LoadingState label="Carregando dashboard..." />
+          </div>
         </Card>
       </Container>
     );
@@ -228,12 +231,12 @@ export default function Dashboard() {
         />
       </section>
       <Fab
-        aria-label="Start Planning"
+        aria-label="Abrir planejamento"
         onClick={() => navigate("/planning")}
         className="w-auto px-6"
       >
         <span className="text-sm font-medium text-background">
-          Start Planning
+          Planejar
         </span>
       </Fab>
     </Container>

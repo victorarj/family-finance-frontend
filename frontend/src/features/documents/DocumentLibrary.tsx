@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "../../components/Button";
 import Card from "../../components/Card";
+import EmptyState from "../../components/EmptyState";
+import LoadingState from "../../components/LoadingState";
 import { deleteDocument, listDocuments, uploadDocument } from "./documents.api";
 import DocumentCard from "./DocumentCard";
 import UploadZone from "./UploadZone";
@@ -40,7 +42,7 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       const items = await listDocuments();
       setDocuments(sortDocuments(items));
     } catch (error) {
-      setFetchError(error instanceof Error ? error.message : "Failed to load documents.");
+      setFetchError(error instanceof Error ? error.message : "Falha ao carregar documentos.");
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
   };
 
   const handleDelete = async (document: Document) => {
-    if (!window.confirm(`Delete ${document.filename}?`)) {
+    if (!window.confirm(`Excluir ${document.filename}?`)) {
       return;
     }
 
@@ -126,14 +128,14 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       {fetchError && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{fetchError}</p>}
 
       {isLoading ? (
-        <Card className="text-sm text-muted-foreground">Carregando documentos...</Card>
-      ) : documents.length === 0 ? (
-        <Card className="space-y-2 text-center">
-          <p className="text-lg text-foreground">Nenhum documento ainda</p>
-          <p className="text-sm text-muted-foreground">
-            Envie holerites, contas ou extratos para começar a fazer perguntas.
-          </p>
+        <Card>
+          <LoadingState label="Carregando documentos..." />
         </Card>
+      ) : documents.length === 0 ? (
+        <EmptyState
+          title="Nenhum documento enviado"
+          description="Envie holerites, contas ou extratos para começar a fazer perguntas."
+        />
       ) : (
         <div className="space-y-3">
           {documents.map((document) => (

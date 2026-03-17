@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Card from "../components/Card";
 import Container from "../components/Container";
+import EmptyState from "../components/EmptyState";
+import LoadingState from "../components/LoadingState";
 import Button from "../components/Button";
 import TransactionSheet from "../components/TransactionSheet";
 import { RetryIcon } from "../components/Icons";
@@ -84,7 +86,7 @@ export default function SnapshotsPage() {
         <Card className="space-y-3">
           <h3 className="text-lg">Histórico</h3>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
+            <LoadingState label="Carregando snapshots..." />
           ) : loadingTimedOut ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Não foi possível carregar o histórico.</p>
@@ -93,9 +95,10 @@ export default function SnapshotsPage() {
               </Button>
             </div>
           ) : snapshots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum snapshot encontrado.
-            </p>
+            <EmptyState
+              title="Nenhum snapshot encontrado"
+              description="Finalize o planejamento do mês para gerar o primeiro snapshot."
+            />
           ) : (
             <ul className="space-y-2">
               {snapshots.map((snapshot) => (
@@ -138,7 +141,7 @@ export default function SnapshotsPage() {
         description="Comparativo entre planejamento fechado e execução real do mês."
       >
         {detailsLoading || !selected ? (
-          <p className="text-sm text-muted-foreground">Carregando detalhes...</p>
+          <LoadingState label="Carregando detalhes..." />
         ) : (
           <div className="space-y-3 text-sm">
             <div className="rounded-md bg-surface px-3 py-2">

@@ -28,11 +28,11 @@ export function TabletNavigation({
   onLogout,
 }: AppNavigationProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+    <header className="sticky top-0 z-sticky border-b border-border bg-card/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-xl text-foreground">Household Finances</h1>
+            <h1 className="text-xl text-foreground">Finanças da Casa</h1>
             <p className="truncate text-sm text-muted-foreground">{userEmail || "Sem usuário"}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -45,7 +45,7 @@ export function TabletNavigation({
           </div>
         </div>
 
-        <nav aria-label="Primary navigation" className="overflow-x-auto">
+        <nav aria-label="Navegação principal" className="overflow-x-auto">
           <div className="flex min-w-max gap-2 pb-1">
             {items.map((item) => {
               const isActive = item.key === activeKey;
@@ -82,17 +82,17 @@ export function DesktopNavigation({
   onLogout,
 }: AppNavigationProps) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-card lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-border bg-card lg:flex">
       <div className="flex w-full flex-col px-5 py-6">
         <div className="mb-8 space-y-2">
-          <p className="text-xs uppercase tracking-[0.24em] text-primary">Finances</p>
+          <p className="text-xs uppercase tracking-[0.24em] text-primary">Finanças</p>
           <div>
-            <h1 className="text-2xl text-foreground">Household Finances</h1>
+            <h1 className="text-2xl text-foreground">Finanças da Casa</h1>
             <p className="mt-2 break-all text-sm text-muted-foreground">{userEmail || "Sem usuário"}</p>
           </div>
         </div>
 
-        <nav aria-label="Primary navigation" className="space-y-2">
+        <nav aria-label="Navegação principal" className="space-y-2">
           {items.map((item) => {
             const isActive = item.key === activeKey;
             return (

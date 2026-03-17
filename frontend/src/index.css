@@ -35,6 +35,13 @@
   --shadow-card: 0 1px 2px hsl(220 15% 15% / 0.06);
   --shadow-elevated: 0 4px 12px hsl(220 15% 15% / 0.1);
   --shadow-fab: 0 10px 24px hsl(var(--primary) / 0.2);
+
+  --motion-fast: 150ms ease-out;
+  --z-nav: 40;
+  --z-overlay: 45;
+  --z-modal: 50;
+  --z-dropdown: 35;
+  --z-sticky: 30;
 }
 
 .dark {

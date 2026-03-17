@@ -46,7 +46,7 @@ export default function DocumentFilter({ documents, selectedIds, onChange }: Doc
       </Button>
 
       {open && (
-        <Card className="absolute right-0 z-20 mt-2 w-full min-w-72 space-y-2 border border-border bg-card sm:w-80">
+        <Card className="absolute right-0 z-dropdown mt-2 w-full min-w-72 space-y-2 border border-border bg-card sm:w-80">
           <p className="text-sm text-muted-foreground">Limite o assistente aos documentos prontos selecionados.</p>
           <div aria-label="Document filter options" className="max-h-64 space-y-2 overflow-y-auto" role="listbox">
             {documents.length === 0 && (

@@ -3,7 +3,8 @@ import { list, remove } from "../apis/expenses";
 import type { Expense } from "../types";
 import Button from "./Button";
 import Card from "./Card";
-import { EmptyStateIcon } from "./Icons";
+import EmptyState from "./EmptyState";
+import LoadingState from "./LoadingState";
 import { formatCurrency, formatDate } from "../utils/formatters";
 
 interface ExpenseListProps {
@@ -50,7 +51,7 @@ export default function ExpenseList({ onEdit, onCreate, refreshTrigger }: Expens
     }
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">Carregando despesas...</p>;
+  if (loading) return <LoadingState label="Carregando despesas..." />;
 
   if (error) {
     return <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{error}</p>;
@@ -58,16 +59,12 @@ export default function ExpenseList({ onEdit, onCreate, refreshTrigger }: Expens
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center rounded-2xl bg-surface px-4 py-6 text-center">
-        <EmptyStateIcon className="h-8 w-8 text-muted-foreground" />
-        <p className="mt-3 text-sm font-medium text-foreground">Nenhuma despesa cadastrada</p>
-        <p className="mt-1 text-sm text-muted-foreground">Adicione a primeira despesa para começar.</p>
-        {onCreate && (
-          <Button className="mt-4" size="sm" onClick={onCreate}>
-            Adicionar despesa
-          </Button>
-        )}
-      </div>
+      <EmptyState
+        title="Nenhuma despesa cadastrada"
+        description="Adicione a primeira despesa para começar."
+        actionLabel={onCreate ? "Adicionar despesa" : undefined}
+        onAction={onCreate}
+      />
     );
   }
 
