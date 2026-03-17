@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button";
@@ -5,7 +6,7 @@ import Card from "../../components/Card";
 import DocumentFilter from "../../features/documents/DocumentFilter";
 import { CloseIcon } from "../../components/Icons";
 import { ExpenseIcon, IncomeIcon, PlanningIcon, SettingsIcon } from "../Icons";
-import { listDocuments, queryDocuments } from "../../features/documents/documents.api";
+import { listDocumentsWithOptions, queryDocuments } from "../../features/documents/documents.api";
 import { DocumentStatus, type ChatMessage, type Document } from "../../features/documents/documents.types";
 import type { AiChatModalProps, QuickAction } from "./AiChatModal.types";
 import { useTransactionModal } from "../../context/TransactionModalContext";
@@ -56,6 +57,15 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const historyRef = useRef<HTMLDivElement | null>(null);
+  const isMountedRef = useRef(true);
+  const queryControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      queryControllerRef.current?.abort();
+    };
+  }, []);
 
   const readyDocuments = useMemo(
     () => documents.filter((document) => document.status === DocumentStatus.Ready),
@@ -64,15 +74,30 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
 
   useEffect(() => {
     if (!isOpen) return;
+
+    let active = true;
+    const controller = new AbortController();
+
     const loadDocuments = async () => {
       try {
-        const items = await listDocuments();
-        setDocuments(items);
-      } catch {
+        const items = await listDocumentsWithOptions({ signal: controller.signal });
+        if (active && isMountedRef.current) {
+          setDocuments(items);
+        }
+      } catch (error) {
+        if (!active || !isMountedRef.current || axios.isCancel(error)) {
+          return;
+        }
         setDocuments([]);
       }
     };
+
     void loadDocuments();
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -106,6 +131,7 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
 
   useEffect(() => {
     if (isOpen) return;
+    queryControllerRef.current?.abort();
     setMessages([]);
     setSelectedDocumentIds([]);
     setDraft("");
@@ -143,8 +169,15 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
     setDraft("");
     setLoading(true);
 
+    queryControllerRef.current?.abort();
+    const controller = new AbortController();
+    queryControllerRef.current = controller;
+
     try {
-      const response = await queryDocuments(question, selectedDocumentIds);
+      const response = await queryDocuments(question, selectedDocumentIds, { signal: controller.signal });
+      if (!isMountedRef.current) {
+        return;
+      }
       setMessages((current) => [
         ...current,
         {
@@ -156,6 +189,9 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
         },
       ]);
     } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) {
+        return;
+      }
       setMessages((current) => [
         ...current,
         {
@@ -167,6 +203,14 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
         },
       ]);
     } finally {
+      if (queryControllerRef.current === controller) {
+        queryControllerRef.current = null;
+      }
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
       setLoading(false);
       inputRef.current?.focus();
     }

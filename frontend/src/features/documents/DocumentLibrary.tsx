@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Button from "../../components/Button";
 import Card from "../../components/Card";
 import EmptyState from "../../components/EmptyState";
@@ -35,6 +35,17 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [busyDeleteId, setBusyDeleteId] = useState<number | null>(null);
+  const isMountedRef = useRef(true);
+  const uploadProgressTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (uploadProgressTimeoutRef.current !== null) {
+        window.clearTimeout(uploadProgressTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const readyDocuments = useMemo(
     () => documents.filter((document) => document.status === DocumentStatus.Ready),
@@ -45,28 +56,43 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
     onDocumentsChange?.(documents);
   }, [documents, onDocumentsChange]);
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
+    if (!isMountedRef.current) {
+      return;
+    }
+
     try {
       setLoading(true);
       setFetchError(null);
       const items = await listDocuments();
+      if (!isMountedRef.current) {
+        return;
+      }
       setDocuments(sortDocuments(items));
     } catch {
+      if (!isMountedRef.current) {
+        return;
+      }
       setFetchError(genericDocumentsError);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadDocuments();
-  }, []);
+  }, [loadDocuments]);
 
   const handleUpload = async (file: File, sourceType: SourceType, reset: () => void) => {
     try {
       setUploadError(null);
       setUploadProgress(0);
       const uploaded = await uploadDocument(file, sourceType, setUploadProgress);
+      if (!isMountedRef.current) {
+        return;
+      }
       setDocuments((current) =>
         sortDocuments([
           {
@@ -79,9 +105,19 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
       );
       reset();
     } catch {
+      if (!isMountedRef.current) {
+        return;
+      }
       setUploadError(genericDocumentsError);
     } finally {
-      window.setTimeout(() => setUploadProgress(null), 400);
+      if (!isMountedRef.current) {
+        return;
+      }
+      uploadProgressTimeoutRef.current = window.setTimeout(() => {
+        if (isMountedRef.current) {
+          setUploadProgress(null);
+        }
+      }, 400);
     }
   };
 
@@ -97,22 +133,41 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
     try {
       await deleteDocument(document.id);
     } catch {
+      if (!isMountedRef.current) {
+        return;
+      }
       setDocuments(previousDocuments);
       setFetchError(genericDocumentsError);
     } finally {
-      setBusyDeleteId(null);
+      if (isMountedRef.current) {
+        setBusyDeleteId(null);
+      }
     }
   };
 
-  const handleStatusChange = (documentId: number, status: Document["status"], processedAt: string | null) => {
-    setDocuments((current) =>
-      current.map((document) =>
-        document.id === documentId && (document.status !== status || document.processed_at !== processedAt)
-          ? { ...document, status, processed_at: processedAt }
-          : document,
-      ),
-    );
-  };
+  const handleStatusChange = useCallback(
+    (documentId: number, status: Document["status"], processedAt: string | null) => {
+      setDocuments((current) => {
+        let hasChanges = false;
+
+        const next = current.map((document) => {
+          const shouldUpdate =
+            document.id === documentId &&
+            (document.status !== status || document.processed_at !== processedAt);
+
+          if (!shouldUpdate) {
+            return document;
+          }
+
+          hasChanges = true;
+          return { ...document, status, processed_at: processedAt };
+        });
+
+        return hasChanges ? next : current;
+      });
+    },
+    [],
+  );
 
   return (
     <section className="space-y-4">
