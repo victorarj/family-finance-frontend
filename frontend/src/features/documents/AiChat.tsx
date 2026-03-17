@@ -181,12 +181,10 @@ export default function AiChat({ documents }: AiChatProps) {
         </div>
 
         <div className="mt-4 border-t border-border pt-4">
-          <label className="sr-only" htmlFor="documents-chat-input">
-            Ask the assistant a question
-          </label>
+          <label className="sr-only" htmlFor="documents-chat-input">Pergunte para a assistente</label>
           <textarea
             ref={inputRef}
-            aria-label="Ask the assistant a question"
+            aria-label="Pergunte para a assistente"
             className="min-h-28 w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary"
             id="documents-chat-input"
             placeholder="Pergunte sobre gastos, receitas, faturas ou extratos..."

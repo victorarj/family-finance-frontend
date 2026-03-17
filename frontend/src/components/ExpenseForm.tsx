@@ -226,7 +226,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             <button
               type="button"
               aria-label="Fechar aviso"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground"
               onClick={() => setDismissedBankWarning(true)}
             >
               ×
@@ -251,7 +251,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             <FormField label="Data de início (opcional)">
               <Input
                 type="date"
-                lang="pt-PT"
+                lang="pt-BR"
                 value={form.data_inicio}
                 onChange={(e) => setForm((prev) => ({ ...prev, data_inicio: e.target.value }))}
                 disabled={loading}
@@ -260,7 +260,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             <FormField label="Data de fim (opcional)">
               <Input
                 type="date"
-                lang="pt-PT"
+                lang="pt-BR"
                 value={form.data_fim}
                 onChange={(e) => setForm((prev) => ({ ...prev, data_fim: e.target.value }))}
                 disabled={loading}
@@ -272,6 +272,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
             <FormField label="Número de parcelas" required>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
                 value={form.numero_parcelas}
                 onChange={(e) => setForm((prev) => ({ ...prev, numero_parcelas: Number(e.target.value) }))}

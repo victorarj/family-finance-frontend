@@ -118,7 +118,7 @@ export default function IncomeForm({
         <FormField label="Data de recebimento">
           <Input
             type="date"
-            lang="pt-PT"
+            lang="pt-BR"
             value={form.data_recebimento}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, data_recebimento: e.target.value }))

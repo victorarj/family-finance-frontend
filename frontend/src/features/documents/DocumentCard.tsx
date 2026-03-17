@@ -46,7 +46,7 @@ export default function DocumentCard({
           </div>
         </div>
         <Button
-          aria-label={`Delete ${document.filename}`}
+          aria-label={`Excluir ${document.filename}`}
           className="text-expense hover:bg-expense-soft"
           disabled={busy}
           size="icon"

@@ -13,6 +13,8 @@ import BankAccountForm from "../components/BankAccountForm";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Container from "../components/Container";
+import EmptyState from "../components/EmptyState";
+import LoadingState from "../components/LoadingState";
 import TransactionSheet from "../components/TransactionSheet";
 
 function toInput(account: BankAccount): BankAccountInput {
@@ -122,9 +124,12 @@ export default function BankAccountsSettingsPage() {
         <Card className="space-y-3">
           <h3 className="text-lg">Ativas</h3>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
+            <LoadingState label="Carregando contas..." />
           ) : activeAccounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma conta ativa.</p>
+            <EmptyState
+              title="Nenhuma conta ativa"
+              description="Crie uma conta para vincular despesas e receitas."
+            />
           ) : (
             activeAccounts.map((account) => (
               <div key={account.id} className="rounded-xl border border-border bg-background px-4 py-3">
@@ -170,9 +175,12 @@ export default function BankAccountsSettingsPage() {
         <Card className="space-y-3">
           <h3 className="text-lg">Inativas</h3>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
+            <LoadingState label="Carregando contas..." />
           ) : inactiveAccounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma conta inativa.</p>
+            <EmptyState
+              title="Nenhuma conta inativa"
+              description="As contas desativadas aparecerão aqui para referência."
+            />
           ) : (
             inactiveAccounts.map((account) => (
               <div key={account.id} className="rounded-xl border border-border bg-background px-4 py-3">

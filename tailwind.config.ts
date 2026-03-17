@@ -38,6 +38,13 @@ export default {
         elevated: "var(--shadow-elevated)",
         fab: "var(--shadow-fab)",
       },
+      zIndex: {
+        dropdown: "var(--z-dropdown)",
+        sticky: "var(--z-sticky)",
+        nav: "var(--z-nav)",
+        overlay: "var(--z-overlay)",
+        modal: "var(--z-modal)",
+      },
       fontFamily: {
         display: ["Space Grotesk", "sans-serif"],
         body: ["DM Sans", "sans-serif"],

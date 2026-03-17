@@ -26,10 +26,10 @@ export default function BottomNav({
   return (
     <nav
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-xl",
+        "fixed inset-x-0 bottom-0 z-nav border-t border-border bg-card/95 backdrop-blur-xl",
         className,
       )}
-      aria-label="Bottom navigation"
+      aria-label="Navegação inferior"
       data-testid="bottom-nav"
     >
       <div
@@ -45,7 +45,7 @@ export default function BottomNav({
               type="button"
               onClick={() => onChange(item.key)}
               className={cn(
-                "flex min-h-[var(--mobile-nav-height)] flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] leading-tight font-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "flex min-h-[var(--mobile-nav-height)] flex-col items-center justify-center rounded-2xl px-1 py-2 text-[11px] leading-tight font-body transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isActive
                   ? "bg-secondary text-primary"
                   : "text-foreground/70 hover:text-foreground",

@@ -38,20 +38,20 @@ import RegisterPage from "./pages/RegisterPage";
 import SnapshotsPage from "./pages/SnapshotsPage";
 
 const TABS = [
-  { key: "/", label: "Home", icon: <HomeIcon className="h-5 w-5" /> },
+  { key: "/", label: "Painel", icon: <HomeIcon className="h-5 w-5" /> },
   {
     key: "/income",
-    label: "Incomes",
+    label: "Receitas",
     icon: <IncomeIcon className="h-5 w-5" />,
   },
   {
     key: "/expenses",
-    label: "Expenses",
+    label: "Despesas",
     icon: <ExpenseIcon className="h-5 w-5" />,
   },
   {
     key: "/planning",
-    label: "Planning",
+    label: "Planejamento",
     icon: <PlanningIcon className="h-5 w-5" />,
   },
   {
@@ -126,7 +126,7 @@ function AppContent() {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <h1 className="text-base text-foreground">
-                  Household Finances
+                  Finanças da Casa
                 </h1>
                 <p className="truncate text-[11px] text-muted-foreground">
                   {auth.userEmail || "Sem usuário"}
