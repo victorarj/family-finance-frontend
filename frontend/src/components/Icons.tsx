@@ -47,6 +47,16 @@ export function PlanningIcon(props: IconProps) {
   );
 }
 
+export function ChatIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M21 12a8.5 8.5 0 0 1-8.5 8.5H6l-3 2 1.2-3.8A8.5 8.5 0 1 1 21 12Z" />
+      <path d="M8.5 11.5h7" />
+      <path d="M8.5 15h4.5" />
+    </svg>
+  );
+}
+
 export function IncomeIcon(props: IconProps) {
   return (
     <svg {...iconProps(props)}>
@@ -194,6 +204,15 @@ export function CheckIcon(props: IconProps) {
   return (
     <svg {...iconProps(props)}>
       <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="m18 6-12 12" />
+      <path d="m6 6 12 12" />
     </svg>
   );
 }

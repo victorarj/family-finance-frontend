@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   HashRouter,
   Link,
@@ -17,7 +18,10 @@ import BottomNav from "./components/BottomNav";
 import Button from "./components/Button";
 import Container from "./components/Container";
 import Dashboard from "./components/Dashboard";
+import Fab from "./components/Fab";
+import AiChatModal from "./components/AiChatModal";
 import {
+  ChatIcon,
   HomeIcon,
   ExpenseIcon,
   PlanningIcon,
@@ -82,6 +86,7 @@ function AppContent() {
   const isMobile = viewportMode === "mobile";
   const isTablet = viewportMode === "tablet";
   const isDesktop = viewportMode === "desktop";
+  const [isChatOpen, setChatOpen] = useState(false);
 
   const showAppChrome = Boolean(auth.token);
   const shouldRedirectToOnboarding =
@@ -237,6 +242,10 @@ function AppContent() {
                 }
               />
               <Route
+                path="/planejamento"
+                element={<Navigate to="/planning" replace />}
+              />
+              <Route
                 path="/onboarding"
                 element={
                   <RequireAuth>
@@ -293,6 +302,20 @@ function AppContent() {
           activeKey={isSettingsRoute ? undefined : activeTab || "/"}
           onChange={(key) => navigate(key)}
         />
+      )}
+
+      {showAppChrome && !isOnboardingRoute && (
+        <>
+          <Fab
+            aria-label="Abrir chat"
+            onClick={() => setChatOpen(true)}
+            className="w-auto gap-2 px-5"
+          >
+            <ChatIcon className="h-5 w-5 text-background" />
+            <span className="text-sm font-medium text-background">Chat</span>
+          </Fab>
+          <AiChatModal isOpen={isChatOpen} onClose={() => setChatOpen(false)} />
+        </>
       )}
 
       {!showAppChrome && (
