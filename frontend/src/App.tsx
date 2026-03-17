@@ -32,6 +32,7 @@ import {
 } from "./components/Icons";
 import { useViewportMode } from "./hooks/useViewport";
 import DocumentsPage from "./features/documents/DocumentsPage";
+import CategoriasPage from "./features/categories/CategoriasPage";
 import BankAccountsSettingsPage from "./pages/BankAccountsSettingsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import IncomePage from "./pages/IncomePage";
@@ -313,6 +314,14 @@ function AppContent() {
                 element={
                   <RequireAuth>
                     <BankAccountsSettingsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/configuracoes/categorias"
+                element={
+                  <RequireAuth>
+                    <CategoriasPage />
                   </RequireAuth>
                 }
               />

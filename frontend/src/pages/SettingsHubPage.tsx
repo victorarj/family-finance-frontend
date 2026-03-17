@@ -6,6 +6,7 @@ import {
   BankCardIcon,
   ChevronRightIcon,
   DocumentIcon,
+  TagIcon,
 } from "../components/Icons";
 
 type SettingsCardProps = {
@@ -45,7 +46,7 @@ export default function SettingsHubPage() {
           </p>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <SettingsCard
             to="/configuracoes/documentos"
             icon={<DocumentIcon className="h-5 w-5" />}
@@ -57,6 +58,12 @@ export default function SettingsHubPage() {
             icon={<BankCardIcon className="h-5 w-5" />}
             title="Contas Bancárias"
             subtitle="Gerencie suas contas bancárias e carteiras"
+          />
+          <SettingsCard
+            to="/configuracoes/categorias"
+            icon={<TagIcon className="h-5 w-5" />}
+            title="Categorias"
+            subtitle="Gerencie as categorias usadas em despesas e receitas"
           />
         </div>
       </div>
