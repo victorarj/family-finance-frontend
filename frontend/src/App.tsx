@@ -35,6 +35,7 @@ import LoginPage from "./pages/LoginPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import PlanningPage from "./pages/PlanningPage";
 import RegisterPage from "./pages/RegisterPage";
+import SettingsHubPage from "./pages/SettingsHubPage";
 import SnapshotsPage from "./pages/SnapshotsPage";
 
 const TABS = [
@@ -74,7 +75,9 @@ function AppContent() {
   )?.key;
   const isPlanningRoute = location.pathname.startsWith("/planning");
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const isSettingsRoute = location.pathname.startsWith("/settings");
+  const isSettingsRoute =
+    location.pathname.startsWith("/settings") ||
+    location.pathname.startsWith("/configuracoes");
   const isMobile = viewportMode === "mobile";
   const isTablet = viewportMode === "tablet";
   const isDesktop = viewportMode === "desktop";
@@ -137,7 +140,7 @@ function AppContent() {
                   <Link
                     aria-label="Configurações"
                     className="inline-flex h-11 w-11 items-center justify-center rounded-full text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    to="/settings/bank-accounts"
+                    to="/configuracoes"
                   >
                     <SettingsIcon className="h-5 w-5" />
                   </Link>
@@ -246,12 +249,16 @@ function AppContent() {
                 }
               />
               <Route
-                path="/settings"
+                path="/configuracoes"
                 element={
                   <RequireAuth>
-                    <Navigate to="/settings/bank-accounts" replace />
+                    <SettingsHubPage />
                   </RequireAuth>
                 }
+              />
+              <Route
+                path="/settings"
+                element={<Navigate to="/configuracoes" replace />}
               />
               <Route
                 path="/settings/bank-accounts"
