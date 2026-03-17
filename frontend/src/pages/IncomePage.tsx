@@ -1,30 +1,26 @@
 import { useState } from "react";
 import Card from "../components/Card";
 import Container from "../components/Container";
-import Fab from "../components/Fab";
 import IncomeForm from "../components/IncomeForm";
 import IncomeList from "../components/IncomeList";
 import TransactionSheet from "../components/TransactionSheet";
+import { useTransactionModal } from "../context/TransactionModalContext";
 import type { Income } from "../types";
 
 interface IncomePageProps {
   currentUserEmail: string;
+  refreshTrigger?: number;
 }
 
-export default function IncomePage({ currentUserEmail }: IncomePageProps) {
+export default function IncomePage({ currentUserEmail, refreshTrigger = 0 }: IncomePageProps) {
   const [editing, setEditing] = useState<Income | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(0);
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const { openAddIncome } = useTransactionModal();
 
   const blurActiveElement = () => {
     const active = document.activeElement;
     if (active instanceof HTMLElement) active.blur();
-  };
-
-  const openCreateSheet = () => {
-    blurActiveElement();
-    setEditing(null);
-    setSheetOpen(true);
   };
 
   const openEditSheet = (income: Income) => {
@@ -35,7 +31,7 @@ export default function IncomePage({ currentUserEmail }: IncomePageProps) {
 
   const handleSaved = () => {
     setEditing(null);
-    setRefreshTrigger((prev) => prev + 1);
+    setLocalRefreshTrigger((prev) => prev + 1);
     setSheetOpen(false);
   };
 
@@ -52,16 +48,9 @@ export default function IncomePage({ currentUserEmail }: IncomePageProps) {
             <h2 className="text-xl">Receitas</h2>
             <p className="mt-1 text-sm text-muted-foreground">Acompanhe entradas e mantenha previsibilidade financeira.</p>
           </div>
-          <IncomeList onCreate={openCreateSheet} onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
+          <IncomeList onCreate={openAddIncome} onEdit={openEditSheet} refreshTrigger={localRefreshTrigger + refreshTrigger} />
         </Card>
       </section>
-
-      <Fab
-        aria-label="Adicionar receita"
-        onClick={openCreateSheet}
-      >
-        <span aria-hidden className="text-2xl leading-none text-background">+</span>
-      </Fab>
 
       <TransactionSheet
         open={isSheetOpen}
