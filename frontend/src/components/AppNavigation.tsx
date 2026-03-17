@@ -10,7 +10,7 @@ type NavItem = {
 
 type AppNavigationProps = {
   items: NavItem[];
-  activeKey: string;
+  activeKey?: string;
   userEmail: string;
   onNavigate: (key: string) => void;
   onLogout: () => void;
@@ -36,7 +36,15 @@ export function TabletNavigation({
             <p className="truncate text-sm text-muted-foreground">{userEmail || "Sem usuário"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link className="text-sm text-primary hover:underline" to="/configuracoes">
+            <Link
+              className={cn(
+                "rounded-full px-3 py-1 text-sm transition-colors",
+                activeKey === "/configuracoes"
+                  ? "bg-primary text-background"
+                  : "text-primary hover:bg-secondary",
+              )}
+              to="/configuracoes"
+            >
               Configurações
             </Link>
             <Button size="sm" variant="outline" onClick={onLogout}>
@@ -119,8 +127,14 @@ export function DesktopNavigation({
 
         <div className="mt-auto space-y-3 border-t border-border pt-5">
           <Link
-            className="block rounded-xl px-4 py-2 text-sm text-primary transition-colors hover:bg-secondary"
+            className={cn(
+              "block rounded-xl px-4 py-2 text-sm transition-colors",
+              activeKey === "/configuracoes"
+                ? "bg-primary text-background"
+                : "text-primary hover:bg-secondary",
+            )}
             to="/configuracoes"
+            aria-current={activeKey === "/configuracoes" ? "page" : undefined}
           >
             Configurações
           </Link>
