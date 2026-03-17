@@ -163,7 +163,7 @@ function AppContent() {
         {showAppChrome && !isOnboardingRoute && isDesktop && (
           <DesktopNavigation
             items={TABS}
-            activeKey={activeTab || "/"}
+            activeKey={activeTab ?? (isSettingsRoute ? "/configuracoes" : undefined)}
             userEmail={auth.userEmail || ""}
             onNavigate={(key) => navigate(key)}
             onLogout={handleLogout}
@@ -174,7 +174,7 @@ function AppContent() {
           {showAppChrome && !isOnboardingRoute && isTablet && (
             <TabletNavigation
               items={TABS}
-              activeKey={activeTab || "/"}
+              activeKey={activeTab ?? (isSettingsRoute ? "/configuracoes" : undefined)}
               userEmail={auth.userEmail || ""}
               onNavigate={(key) => navigate(key)}
               onLogout={handleLogout}
