@@ -36,7 +36,7 @@ export function TabletNavigation({
             <p className="truncate text-sm text-muted-foreground">{userEmail || "Sem usuário"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link className="text-sm text-primary hover:underline" to="/settings/bank-accounts">
+            <Link className="text-sm text-primary hover:underline" to="/configuracoes">
               Configurações
             </Link>
             <Button size="sm" variant="outline" onClick={onLogout}>
@@ -120,7 +120,7 @@ export function DesktopNavigation({
         <div className="mt-auto space-y-3 border-t border-border pt-5">
           <Link
             className="block rounded-xl px-4 py-2 text-sm text-primary transition-colors hover:bg-secondary"
-            to="/settings/bank-accounts"
+            to="/configuracoes"
           >
             Configurações
           </Link>

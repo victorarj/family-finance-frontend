@@ -86,6 +86,28 @@ export function LogoutIcon(props: IconProps) {
   );
 }
 
+
+export function DocumentIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M10 13h6" />
+      <path d="M10 17h6" />
+    </svg>
+  );
+}
+
+export function BankCardIcon(props: IconProps) {
+  return (
+    <svg {...iconProps(props)}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M3 10h18" />
+      <path d="M7 15h4" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon(props: IconProps) {
   return (
     <svg {...iconProps(props)}>
