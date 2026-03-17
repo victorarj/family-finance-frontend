@@ -9,10 +9,16 @@ const client = axios.create({
   // In production (Render static site), set VITE_API_BASE_URL to your backend URL.
   // In local dev, fallback to Vite proxy at /api.
   baseURL: normalizedBaseUrl || "/api",
+  headers: {
+    Accept: "application/json; charset=utf-8",
+  },
 });
 
 // request interceptor to add Authorization header if token present
 client.interceptors.request.use((config) => {
+  if (config.headers && ["post", "put", "patch"].includes(config.method?.toLowerCase() || "")) {
+    config.headers["Content-Type"] = "application/json; charset=utf-8";
+  }
   const token = localStorage.getItem("token");
   if (token && config.headers) {
     config.headers["Authorization"] = `Bearer ${token}`;
