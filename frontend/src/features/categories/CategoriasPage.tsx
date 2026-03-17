@@ -98,9 +98,8 @@ export default function CategoriasPage() {
         );
       } else {
         const response = await createCategory({ nome: trimmedName });
-        const createdCategory = { ...response.data, ativo: true };
         setCategories((current) =>
-          [...current, createdCategory].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+          [...current, response.data].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
         );
       }
       closeSheet();

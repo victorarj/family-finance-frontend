@@ -39,7 +39,7 @@ describe("CategoriasPage", () => {
 
   it("creates a category using API response and keeps it active sorted by nome", async () => {
     createCategory.mockResolvedValue({
-      data: { id: 4, nome: "Alimentação", ativo: false },
+      data: { id: 4, nome: "Alimentação", ativo: true },
     });
 
     const user = userEvent.setup();
