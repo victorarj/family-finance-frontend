@@ -1,5 +1,7 @@
 import axios from "axios";
 
+export const AUTH_EXPIRED_EVENT = "auth:session-expired";
+
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 const normalizedBaseUrl = rawBaseUrl?.trim().replace(/\/+$/, "");
 
@@ -27,10 +29,13 @@ client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // clear stale auth data; optional redirect
+      const hadToken = Boolean(localStorage.getItem("token"));
       localStorage.removeItem("token");
+      localStorage.removeItem("userId");
       localStorage.removeItem("userEmail");
-      window.location.href = "/#/login";
+      if (hadToken) {
+        window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+      }
     }
     return Promise.reject(error);
   },
