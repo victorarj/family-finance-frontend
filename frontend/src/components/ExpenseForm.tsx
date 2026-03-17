@@ -219,7 +219,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               Nenhuma conta bancária ativa disponível.{" "}
-              <Link className="text-primary hover:underline" to="/settings/bank-accounts">
+              <Link className="text-primary hover:underline" to="/configuracoes/contas-bancarias">
                 Criar conta agora
               </Link>
             </p>

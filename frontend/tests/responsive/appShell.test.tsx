@@ -26,6 +26,20 @@ describe("responsive app shell", () => {
     expect(screen.getByLabelText("Sair")).toBeInTheDocument();
   });
 
+
+
+  it("keeps bottom nav visible without active tab on settings routes", async () => {
+    mockViewport(390);
+    seedAuth();
+    window.location.hash = "#/configuracoes";
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Configurações" })).toBeInTheDocument();
+    expect(screen.getByTestId("bottom-nav")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { current: "page" })).not.toBeInTheDocument();
+  });
+
   it("switches to large-screen navigation on desktop", async () => {
     mockViewport(1280);
     seedAuth();

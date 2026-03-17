@@ -16,6 +16,7 @@ import Container from "../components/Container";
 import EmptyState from "../components/EmptyState";
 import LoadingState from "../components/LoadingState";
 import TransactionSheet from "../components/TransactionSheet";
+import { ChevronLeftIcon } from "../components/Icons";
 
 function toInput(account: BankAccount): BankAccountInput {
   return {
@@ -94,8 +95,15 @@ export default function BankAccountsSettingsPage() {
 
   return (
     <Container size="lg">
-      <div className="space-y-4 py-6">
+      <div className="space-y-4 px-4 py-4 md:px-0 md:py-6">
         <Card className="space-y-3">
+          <Link
+            to="/configuracoes"
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary md:hidden"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+            <span>Configurações</span>
+          </Link>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-sm uppercase tracking-[0.2em] text-primary">Configurações</p>

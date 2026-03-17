@@ -77,7 +77,8 @@ function AppContent() {
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
   const isSettingsRoute =
     location.pathname.startsWith("/settings") ||
-    location.pathname.startsWith("/configuracoes");
+    location.pathname.startsWith("/configuracoes") ||
+    location.pathname.startsWith("/documents");
   const isMobile = viewportMode === "mobile";
   const isTablet = viewportMode === "tablet";
   const isDesktop = viewportMode === "desktop";
@@ -139,7 +140,9 @@ function AppContent() {
                 {!isOnboardingRoute && (
                   <Link
                     aria-label="Configurações"
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      isSettingsRoute ? "bg-secondary" : "hover:bg-secondary"
+                    }`}
                     to="/configuracoes"
                   >
                     <SettingsIcon className="h-5 w-5" />
@@ -183,10 +186,7 @@ function AppContent() {
 
           <main
             className={
-              showAppChrome &&
-              isMobile &&
-              !isOnboardingRoute &&
-              !isSettingsRoute
+              showAppChrome && isMobile && !isOnboardingRoute
                 ? "pb-[calc(var(--mobile-nav-height)+env(safe-area-inset-bottom))]"
                 : ""
             }
@@ -201,12 +201,16 @@ function AppContent() {
                 }
               />
               <Route
-                path="/documents"
+                path="/configuracoes/documentos"
                 element={
                   <RequireAuth>
                     <DocumentsPage />
                   </RequireAuth>
                 }
+              />
+              <Route
+                path="/documents"
+                element={<Navigate to="/configuracoes/documentos" replace />}
               />
               <Route
                 path="/expenses"
@@ -261,12 +265,16 @@ function AppContent() {
                 element={<Navigate to="/configuracoes" replace />}
               />
               <Route
-                path="/settings/bank-accounts"
+                path="/configuracoes/contas-bancarias"
                 element={
                   <RequireAuth>
                     <BankAccountsSettingsPage />
                   </RequireAuth>
                 }
+              />
+              <Route
+                path="/settings/bank-accounts"
+                element={<Navigate to="/configuracoes/contas-bancarias" replace />}
               />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -279,10 +287,10 @@ function AppContent() {
         </div>
       </div>
 
-      {showAppChrome && isMobile && !isOnboardingRoute && !isSettingsRoute && (
+      {showAppChrome && isMobile && !isOnboardingRoute && (
         <BottomNav
           items={TABS}
-          activeKey={activeTab || "/"}
+          activeKey={isSettingsRoute ? undefined : activeTab || "/"}
           onChange={(key) => navigate(key)}
         />
       )}
