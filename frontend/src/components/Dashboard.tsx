@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { getOverview } from "../apis/dashboard";
 import type { DashboardOverview } from "../types";
 import Card from "./Card";
 import Container from "./Container";
-import Fab from "./Fab";
 import LoadingState from "./LoadingState";
 import MonthNavigator from "./MonthNavigator";
 import { formatCurrency, getMonthStatusLabel } from "../utils/formatters";
@@ -124,7 +122,6 @@ function statusBadgeClasses(status: DashboardOverview["month_status"]) {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const [month, setMonth] = useState(monthNow());
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,15 +227,6 @@ export default function Dashboard() {
           variance={overview.planned_vs_actual_diff ?? null}
         />
       </section>
-      <Fab
-        aria-label="Abrir planejamento"
-        onClick={() => navigate("/planning")}
-        className="w-auto px-6"
-      >
-        <span className="text-sm font-medium text-background">
-          Planejar
-        </span>
-      </Fab>
     </Container>
   );
 }
