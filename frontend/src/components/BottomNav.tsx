@@ -8,7 +8,7 @@ type BottomNavItem = {
 
 type BottomNavProps = {
   items: BottomNavItem[];
-  activeKey: string;
+  activeKey?: string;
   onChange: (key: string) => void;
   className?: string;
 };

@@ -47,13 +47,13 @@ export default function SettingsHubPage() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <SettingsCard
-            to="/documents"
+            to="/configuracoes/documentos"
             icon={<DocumentIcon className="h-5 w-5" />}
             title="Document Intelligence"
             subtitle="Faça upload de extratos, holerites e contas para consultar com IA"
           />
           <SettingsCard
-            to="/settings/bank-accounts"
+            to="/configuracoes/contas-bancarias"
             icon={<BankCardIcon className="h-5 w-5" />}
             title="Contas Bancárias"
             subtitle="Gerencie suas contas bancárias e carteiras"

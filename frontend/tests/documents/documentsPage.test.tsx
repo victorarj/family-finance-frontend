@@ -84,18 +84,18 @@ describe("DocumentsPage", () => {
     expect(await screen.findByText("March Payslip.pdf")).toBeInTheDocument();
     expect(screen.getByText("Power Bill.pdf")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /filter ready documents/i }));
+    await user.click(screen.getByRole("button", { name: /filtrar documentos prontos/i }));
     await user.click(screen.getByLabelText("March Payslip.pdf"));
-    await user.type(screen.getByLabelText(/ask the assistant a question/i), "Summarize my payslip{enter}");
+    await user.type(screen.getByLabelText(/pergunte para a assistente/i), "Summarize my payslip{enter}");
 
     expect(await screen.findByText("Your payslip shows a net increase.")).toBeInTheDocument();
 
-    const sources = screen.getByText("Sources").closest("details");
+    const sources = screen.getByText("Fontes").closest("details");
     expect(sources).not.toBeNull();
     if (sources) {
       const scoped = within(sources);
-      await user.click(scoped.getByText("Sources"));
-      await waitFor(() => expect(scoped.getByText(/Document #11/i)).toBeInTheDocument());
+      await user.click(scoped.getByText("Fontes"));
+      await waitFor(() => expect(scoped.getByText(/Documento #11/i)).toBeInTheDocument());
     }
   });
 });

@@ -27,9 +27,9 @@ describe("transactions - bank account behavior", () => {
     expect(
       await screen.findByText(/Nenhuma conta bancária ativa disponível/i),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Adicionar/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Adicionar/i })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("link", { name: /Criar conta agora/i }).getAttribute("href")).toContain(
-      "/settings/bank-accounts",
+      "/configuracoes/contas-bancarias",
     );
   });
 
