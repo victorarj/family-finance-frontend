@@ -2,6 +2,10 @@ import client from "../../utils/apiClient";
 import { SourceType } from "./documents.types";
 import type { Document, PaginatedDocumentsResponse, QueryResponse } from "./documents.types";
 
+type RequestOptions = {
+  signal?: AbortSignal;
+};
+
 type UploadResponse =
   | {
       id: number;
@@ -61,8 +65,17 @@ export async function listDocuments(): Promise<Document[]> {
   return Array.isArray(response.data.items) ? response.data.items : [];
 }
 
-export async function getDocument(id: number): Promise<Document> {
-  const response = await client.get<Document>(`/v1/documents/${id}`);
+export async function listDocumentsWithOptions(options: RequestOptions = {}): Promise<Document[]> {
+  const response = await client.get<PaginatedDocumentsResponse>("/v1/documents", {
+    signal: options.signal,
+  });
+  return Array.isArray(response.data.items) ? response.data.items : [];
+}
+
+export async function getDocument(id: number, options: RequestOptions = {}): Promise<Document> {
+  const response = await client.get<Document>(`/v1/documents/${id}`, {
+    signal: options.signal,
+  });
   return response.data;
 }
 
@@ -73,10 +86,13 @@ export async function deleteDocument(id: number): Promise<void> {
 export async function queryDocuments(
   question: string,
   documentIds?: number[],
+  options: RequestOptions = {},
 ): Promise<QueryResponse> {
   const response = await client.post<QueryResponse>("/v1/ai/query", {
     question,
     document_ids: documentIds && documentIds.length ? documentIds : undefined,
+  }, {
+    signal: options.signal,
   });
   return response.data;
 }

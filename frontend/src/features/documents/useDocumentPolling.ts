@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { getDocument } from "./documents.api";
 import { DocumentStatus } from "./documents.types";
@@ -28,15 +29,19 @@ export function useDocumentPolling(
     }
 
     let active = true;
+    let requestController: AbortController | null = null;
 
     const poll = async () => {
+      requestController?.abort();
+      requestController = new AbortController();
+
       try {
-        const document = await getDocument(documentId);
+        const document = await getDocument(documentId, { signal: requestController.signal });
         if (!active) return;
         setStatus(document.status);
         setProcessedAt(document.processed_at ?? null);
-      } catch {
-        if (!active) return;
+      } catch (error) {
+        if (!active || axios.isCancel(error)) return;
       }
     };
 
@@ -47,6 +52,7 @@ export function useDocumentPolling(
 
     return () => {
       active = false;
+      requestController?.abort();
       window.clearInterval(intervalId);
     };
   }, [documentId, status]);
