@@ -41,6 +41,10 @@ import PlanningPage from "./pages/PlanningPage";
 import RegisterPage from "./pages/RegisterPage";
 import SettingsHubPage from "./pages/SettingsHubPage";
 import SnapshotsPage from "./pages/SnapshotsPage";
+import TransactionModalContext from "./context/TransactionModalContext";
+import TransactionSheet from "./components/TransactionSheet";
+import IncomeForm from "./components/IncomeForm";
+import ExpenseForm from "./components/ExpenseForm";
 
 const TABS = [
   { key: "/", label: "Painel", icon: <HomeIcon className="h-5 w-5" /> },
@@ -87,6 +91,30 @@ function AppContent() {
   const isTablet = viewportMode === "tablet";
   const isDesktop = viewportMode === "desktop";
   const [isChatOpen, setChatOpen] = useState(false);
+  const [isIncomeSheetOpen, setIncomeSheetOpen] = useState(false);
+  const [isExpenseSheetOpen, setExpenseSheetOpen] = useState(false);
+  const [incomeRefreshToken, setIncomeRefreshToken] = useState(0);
+  const [expenseRefreshToken, setExpenseRefreshToken] = useState(0);
+
+  const openAddIncome = () => {
+    setExpenseSheetOpen(false);
+    setIncomeSheetOpen(true);
+  };
+
+  const openAddExpense = () => {
+    setIncomeSheetOpen(false);
+    setExpenseSheetOpen(true);
+  };
+
+  const handleIncomeSaved = () => {
+    setIncomeSheetOpen(false);
+    setIncomeRefreshToken((current) => current + 1);
+  };
+
+  const handleExpenseSaved = () => {
+    setExpenseSheetOpen(false);
+    setExpenseRefreshToken((current) => current + 1);
+  };
 
   const showAppChrome = Boolean(auth.token);
   const shouldRedirectToOnboarding =
@@ -126,9 +154,10 @@ function AppContent() {
   }
 
   return (
-    <div
-      className={`min-h-dvh ${isPlanningRoute ? "bg-secondary" : "bg-background"}`}
-    >
+    <TransactionModalContext.Provider value={{ openAddIncome, openAddExpense, incomeRefreshToken, expenseRefreshToken }}>
+      <div
+        className={`min-h-dvh ${isPlanningRoute ? "bg-secondary" : "bg-background"}`}
+      >
       {showAppChrome && isMobile && (
         <header className="border-b border-border bg-card/90">
           <Container className="py-2" size="lg">
@@ -221,7 +250,10 @@ function AppContent() {
                 path="/expenses"
                 element={
                   <RequireAuth>
-                    <ExpensesPage currentUserEmail={auth.userEmail || ""} />
+                    <ExpensesPage
+                      currentUserEmail={auth.userEmail || ""}
+                      refreshTrigger={expenseRefreshToken}
+                    />
                   </RequireAuth>
                 }
               />
@@ -229,7 +261,10 @@ function AppContent() {
                 path="/income"
                 element={
                   <RequireAuth>
-                    <IncomePage currentUserEmail={auth.userEmail || ""} />
+                    <IncomePage
+                      currentUserEmail={auth.userEmail || ""}
+                      refreshTrigger={incomeRefreshToken}
+                    />
                   </RequireAuth>
                 }
               />
@@ -315,6 +350,34 @@ function AppContent() {
             <span className="text-sm font-medium text-background">Chat</span>
           </Fab>
           <AiChatModal isOpen={isChatOpen} onClose={() => setChatOpen(false)} />
+
+          <TransactionSheet
+            open={isIncomeSheetOpen}
+            onOpenChange={setIncomeSheetOpen}
+            title="Nova receita"
+            description="Preencha os campos para salvar a receita."
+          >
+            <IncomeForm
+              income={null}
+              currentUserEmail={auth.userEmail || ""}
+              onSaved={handleIncomeSaved}
+              onCancel={() => setIncomeSheetOpen(false)}
+            />
+          </TransactionSheet>
+
+          <TransactionSheet
+            open={isExpenseSheetOpen}
+            onOpenChange={setExpenseSheetOpen}
+            title="Nova despesa"
+            description="Preencha os campos para salvar a despesa."
+          >
+            <ExpenseForm
+              expense={null}
+              currentUserEmail={auth.userEmail || ""}
+              onSaved={handleExpenseSaved}
+              onCancel={() => setExpenseSheetOpen(false)}
+            />
+          </TransactionSheet>
         </>
       )}
 
@@ -330,7 +393,8 @@ function AppContent() {
           </Container>
         </footer>
       )}
-    </div>
+      </div>
+    </TransactionModalContext.Provider>
   );
 }
 

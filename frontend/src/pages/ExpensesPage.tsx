@@ -3,28 +3,24 @@ import Card from "../components/Card";
 import Container from "../components/Container";
 import ExpenseForm from "../components/ExpenseForm";
 import ExpenseList from "../components/ExpenseList";
-import Fab from "../components/Fab";
 import TransactionSheet from "../components/TransactionSheet";
+import { useTransactionModal } from "../context/TransactionModalContext";
 import type { Expense } from "../types";
 
 interface ExpensesPageProps {
   currentUserEmail: string;
+  refreshTrigger?: number;
 }
 
-export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
+export default function ExpensesPage({ currentUserEmail, refreshTrigger = 0 }: ExpensesPageProps) {
   const [editing, setEditing] = useState<Expense | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [localRefreshTrigger, setLocalRefreshTrigger] = useState(0);
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const { openAddExpense } = useTransactionModal();
 
   const blurActiveElement = () => {
     const active = document.activeElement;
     if (active instanceof HTMLElement) active.blur();
-  };
-
-  const openCreateSheet = () => {
-    blurActiveElement();
-    setEditing(null);
-    setSheetOpen(true);
   };
 
   const openEditSheet = (expense: Expense) => {
@@ -35,7 +31,7 @@ export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
 
   const handleSaved = () => {
     setEditing(null);
-    setRefreshTrigger((prev) => prev + 1);
+    setLocalRefreshTrigger((prev) => prev + 1);
     setSheetOpen(false);
   };
 
@@ -54,16 +50,9 @@ export default function ExpensesPage({ currentUserEmail }: ExpensesPageProps) {
               <p className="mt-1 text-sm text-muted-foreground">Registre gastos e mantenha o controle do fluxo mensal.</p>
             </div>
           </div>
-          <ExpenseList onCreate={openCreateSheet} onEdit={openEditSheet} refreshTrigger={refreshTrigger} />
+          <ExpenseList onCreate={openAddExpense} onEdit={openEditSheet} refreshTrigger={localRefreshTrigger + refreshTrigger} />
         </Card>
       </section>
-
-      <Fab
-        aria-label="Adicionar despesa"
-        onClick={openCreateSheet}
-      >
-        <span aria-hidden className="text-2xl leading-none text-background">+</span>
-      </Fab>
 
       <TransactionSheet
         open={isSheetOpen}

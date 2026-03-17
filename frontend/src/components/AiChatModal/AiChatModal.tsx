@@ -4,15 +4,19 @@ import Button from "../../components/Button";
 import Card from "../../components/Card";
 import DocumentFilter from "../../features/documents/DocumentFilter";
 import { CloseIcon } from "../../components/Icons";
+import { ExpenseIcon, IncomeIcon, PlanningIcon, SettingsIcon } from "../Icons";
 import { listDocuments, queryDocuments } from "../../features/documents/documents.api";
 import { DocumentStatus, type ChatMessage, type Document } from "../../features/documents/documents.types";
 import type { AiChatModalProps, QuickAction } from "./AiChatModal.types";
+import { useTransactionModal } from "../../context/TransactionModalContext";
 
 const INITIAL_GREETING = "Olá! Sou seu assistente financeiro. Como posso te ajudar hoje?";
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { label: "📅 Iniciar Planejamento", path: "/planejamento" },
-  { label: "⚙️ Abrir Configurações", path: "/configuracoes" },
+  { label: "+ Nova receita", icon: "income", action: "open_income" },
+  { label: "+ Nova despesa", icon: "expense", action: "open_expense" },
+  { label: "Iniciar Planejamento", icon: "planning", action: "navigate", path: "/planejamento" },
+  { label: "Abrir Configurações", icon: "settings", action: "navigate", path: "/configuracoes" },
 ];
 
 function createMessageId() {
@@ -43,6 +47,7 @@ function renderBasicMarkdown(value: string) {
 
 export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
   const navigate = useNavigate();
+  const { openAddIncome, openAddExpense } = useTransactionModal();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
@@ -167,9 +172,30 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
     }
   };
 
-  const handleQuickAction = (path: string) => {
+  const handleQuickAction = (action: QuickAction) => {
     onClose();
-    navigate(path);
+
+    if (action.action === "open_income") {
+      openAddIncome();
+      return;
+    }
+
+    if (action.action === "open_expense") {
+      openAddExpense();
+      return;
+    }
+
+    if (action.path) {
+      navigate(action.path);
+    }
+  };
+
+  const renderQuickActionIcon = (icon: QuickAction["icon"]) => {
+    const className = "h-4 w-4";
+    if (icon === "income") return <IncomeIcon className={className} />;
+    if (icon === "expense") return <ExpenseIcon className={className} />;
+    if (icon === "planning") return <PlanningIcon className={className} />;
+    return <SettingsIcon className={className} />;
   };
 
   return (
@@ -244,15 +270,16 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
                   </div>
 
                   {!hasSentFirstMessage && index === 0 && message.content === INITIAL_GREETING && (
-                    <div className="ml-2 flex flex-wrap gap-2">
+                    <div className="ml-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                       {QUICK_ACTIONS.map((action) => (
                         <button
-                          key={action.path}
+                          key={action.label}
                           type="button"
-                          onClick={() => handleQuickAction(action.path)}
-                          className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-foreground transition hover:bg-secondary"
+                          onClick={() => handleQuickAction(action)}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-foreground transition hover:bg-secondary"
                         >
-                          {action.label}
+                          {renderQuickActionIcon(action.icon)}
+                          <span>{action.label}</span>
                         </button>
                       ))}
                     </div>

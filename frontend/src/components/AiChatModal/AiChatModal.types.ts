@@ -5,5 +5,7 @@ export type AiChatModalProps = {
 
 export type QuickAction = {
   label: string;
-  path: string;
+  icon: "income" | "expense" | "planning" | "settings";
+  action: "open_income" | "open_expense" | "navigate";
+  path?: string;
 };
