@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { login as apiLogin, register as apiRegister } from "../apis/auth";
 import { completeOnboarding as apiCompleteOnboarding, getCurrentUser } from "../apis/users";
 import type { User } from "../types";
+import { AUTH_EXPIRED_EVENT } from "../utils/apiClient";
 
 interface AuthContextType {
   token: string | null;
@@ -29,6 +30,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileLoading, setProfileLoading] = useState<boolean>(() => Boolean(localStorage.getItem("token")));
 
+  const logout = useCallback(() => {
+    setToken(null);
+    setUserId(null);
+    setUserEmail(null);
+    setCurrentUser(null);
+    setProfileLoading(false);
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userEmail");
+  }, []);
+
   const refreshCurrentUser = async () => {
     if (!localStorage.getItem("token")) {
       setCurrentUser(null);
@@ -51,6 +63,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    const handleAuthExpired = () => {
+      logout();
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, [logout]);
+
+  useEffect(() => {
     if (!token) {
       setCurrentUser(null);
       setProfileLoading(false);
@@ -58,10 +81,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     refreshCurrentUser().catch(() => {
-      setCurrentUser(null);
-      setProfileLoading(false);
+      logout();
     });
-  }, [token]);
+  }, [token, logout]);
 
   const login = async (email: string, senha: string) => {
     const resp = await apiLogin(email, senha);
@@ -87,17 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (response.data.id) localStorage.setItem("userId", String(response.data.id));
     if (response.data.email) localStorage.setItem("userEmail", response.data.email);
     return response.data;
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUserId(null);
-    setUserEmail(null);
-    setCurrentUser(null);
-    setProfileLoading(false);
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userEmail");
   };
 
   return (
