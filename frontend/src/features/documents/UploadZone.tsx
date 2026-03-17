@@ -56,7 +56,7 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
   };
 
   return (
-    <Card className="space-y-4 border border-dashed border-border/80 bg-secondary/30">
+    <Card className="space-y-4">
       <div>
         <h3 className="text-lg text-foreground">Enviar documentos</h3>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -67,10 +67,10 @@ export default function UploadZone({ busy = false, error, onUpload, progress }: 
       <button
         aria-controls={inputId}
         aria-describedby={localError || error ? `${inputId}-error` : undefined}
-        className={`flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border px-4 py-6 text-center transition ${
+        className={`flex min-h-40 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-4 py-6 text-center transition ${
           isDragActive
-            ? "border-primary bg-background"
-            : "border-border bg-background/80 hover:border-primary/60"
+            ? "border-primary bg-secondary/30"
+            : "border-border bg-background hover:border-primary/60"
         }`}
         type="button"
         onClick={() => inputRef.current?.click()}
