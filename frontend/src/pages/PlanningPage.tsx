@@ -415,7 +415,7 @@ export default function PlanningPage() {
                   : `Planejando ${formatMonthLabel(mes)}`}
               </p>
               {status === "NOT_STARTED" && (
-                <p className="text-[10px] text-muted-foreground">⏱ Leva cerca de 5 minutos</p>
+                <p className="text-[10px] text-muted-foreground">⏱ ~5 minutos</p>
               )}
             </div>
             <div

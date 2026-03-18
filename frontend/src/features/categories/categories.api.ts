@@ -17,5 +17,8 @@ export const createCategory = (payload: CreateCategoryPayload) =>
 export const updateCategory = (id: number, payload: UpdateCategoryPayload) =>
   client.put<Category>(`/categories/${id}`, payload);
 
-export const deactivateCategory = (id: number) =>
+export const removeCategory = (id: number) =>
   client.delete<Category>(`/categories/${id}`);
+
+export const activateCategory = (id: number) =>
+  client.post<Category>(`/categories/${id}/activate`, {});

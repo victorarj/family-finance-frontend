@@ -76,11 +76,18 @@ export interface Category {
   id?: number;
   nome: string;
   ativo: boolean;
+  is_default: boolean;
+  is_in_use: boolean;
+  can_delete: boolean;
 }
 
 // Currency
 export interface Currency {
   codigo: string;
+  ativo: boolean;
+  is_default: boolean;
+  is_in_use: boolean;
+  can_delete: boolean;
 }
 
 // Priority

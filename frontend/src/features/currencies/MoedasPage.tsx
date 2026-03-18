@@ -12,9 +12,10 @@ import LoadingState from "../../components/LoadingState";
 import TransactionSheet from "../../components/TransactionSheet";
 import { getApiErrorMessage } from "../../utils/apiError";
 import {
+  activateCurrency,
   createCurrency,
-  deleteCurrency,
   listCurrencies,
+  removeCurrency,
   updateCurrency,
 } from "./currencies.api";
 import type { Currency } from "./currencies.types";
@@ -22,7 +23,8 @@ import type { Currency } from "./currencies.types";
 const GET_ERROR_MESSAGE = "Não foi possível carregar as moedas. Tente novamente.";
 const CREATE_ERROR_MESSAGE = "Não foi possível criar a moeda. Tente novamente.";
 const UPDATE_ERROR_MESSAGE = "Não foi possível atualizar a moeda. Tente novamente.";
-const DELETE_ERROR_MESSAGE = "Não foi possível excluir a moeda. Tente novamente.";
+const REMOVE_ERROR_MESSAGE = "Não foi possível atualizar a moeda. Tente novamente.";
+const ACTIVATE_ERROR_MESSAGE = "Não foi possível reativar a moeda. Tente novamente.";
 const DUPLICATE_ERROR_MESSAGE = "Esta moeda já existe.";
 
 const sortCurrencies = (items: Currency[]) =>
@@ -41,7 +43,14 @@ export default function MoedasPage() {
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
   const isMountedRef = useRef(true);
 
-  const sortedCurrencies = useMemo(() => sortCurrencies(currencies), [currencies]);
+  const activeCurrencies = useMemo(
+    () => sortCurrencies(currencies.filter((currency) => currency.ativo)),
+    [currencies],
+  );
+  const inactiveCurrencies = useMemo(
+    () => sortCurrencies(currencies.filter((currency) => !currency.ativo)),
+    [currencies],
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -56,7 +65,7 @@ export default function MoedasPage() {
     setLoadError(false);
     setSaveError(null);
     try {
-      const response = await listCurrencies({ signal });
+      const response = await listCurrencies({ signal, includeInactive: true });
       if (signal?.aborted || !isMountedRef.current) return;
       setCurrencies(sortCurrencies(Array.isArray(response.data) ? response.data : []));
     } catch (error) {
@@ -138,22 +147,47 @@ export default function MoedasPage() {
     }
   };
 
-  const handleDelete = async (currency: Currency) => {
+  const handleRemove = async (currency: Currency) => {
     const previousCurrencies = currencies;
     setSaveError(null);
     setDeletingCode(currency.codigo);
-    setCurrencies((current) => current.filter((item) => item.codigo !== currency.codigo));
+    setCurrencies((current) =>
+      current.map((item) =>
+        item.codigo === currency.codigo ? { ...item, ativo: false } : item,
+      ),
+    );
 
     try {
-      await deleteCurrency(currency.codigo);
+      const response = await removeCurrency(currency.codigo);
       if (!isMountedRef.current) return;
+      if ((response.data as Currency & { deleted?: boolean }).deleted) {
+        setCurrencies((current) => current.filter((item) => item.codigo !== currency.codigo));
+      } else {
+        setCurrencies((current) =>
+          current.map((item) => (item.codigo === currency.codigo ? response.data : item)),
+        );
+      }
       setConfirmingDeleteCode(null);
     } catch (error) {
       if (!isMountedRef.current || axios.isCancel(error)) return;
       setCurrencies(previousCurrencies);
-      setSaveError(getApiErrorMessage(error, DELETE_ERROR_MESSAGE));
+      setSaveError(getApiErrorMessage(error, REMOVE_ERROR_MESSAGE));
     } finally {
       if (isMountedRef.current) setDeletingCode(null);
+    }
+  };
+
+  const handleActivate = async (currency: Currency) => {
+    setSaveError(null);
+    try {
+      const response = await activateCurrency(currency.codigo);
+      if (!isMountedRef.current) return;
+      setCurrencies((current) =>
+        current.map((item) => (item.codigo === currency.codigo ? response.data : item)),
+      );
+    } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) return;
+      setSaveError(getApiErrorMessage(error, ACTIVATE_ERROR_MESSAGE));
     }
   };
 
@@ -183,7 +217,7 @@ export default function MoedasPage() {
         {saveError && <p className="rounded-md bg-expense-soft px-3 py-2 text-sm text-expense">{saveError}</p>}
 
         <Card className="space-y-3">
-          <h3 className="text-lg">Moedas cadastradas</h3>
+          <h3 className="text-lg">Ativas</h3>
           {loading ? (
             <LoadingState label="Carregando moedas..." />
           ) : loadError ? (
@@ -194,19 +228,25 @@ export default function MoedasPage() {
               actionLabel="Tentar novamente"
               onAction={loadCurrencies}
             />
-          ) : sortedCurrencies.length === 0 ? (
+          ) : activeCurrencies.length === 0 ? (
             <EmptyState
-              title="Nenhuma moeda cadastrada."
+              title="Nenhuma moeda ativa."
               description="Adicione uma nova moeda."
               icon={<TagIcon className="h-8 w-8 text-muted-foreground" />}
             />
           ) : (
-            sortedCurrencies.map((currency) => (
+            activeCurrencies.map((currency) => (
               <div key={currency.codigo} className="rounded-xl border border-border bg-background px-4 py-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="rounded-md bg-secondary px-2 py-1 font-mono text-sm font-semibold tracking-wide text-foreground">
-                    {currency.codigo}
-                  </p>
+                  <div>
+                    <p className="rounded-md bg-secondary px-2 py-1 font-mono text-sm font-semibold tracking-wide text-foreground">
+                      {currency.codigo}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {currency.is_default && <span className="rounded-full bg-secondary px-2 py-1">Padrão</span>}
+                      {currency.is_in_use && <span className="rounded-full bg-warning-soft px-2 py-1 text-warning">Em uso</span>}
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={() => openEdit(currency)}>
                       Editar
@@ -214,28 +254,32 @@ export default function MoedasPage() {
                     <Button
                       type="button"
                       size="sm"
-                      variant="destructive"
+                      variant={currency.can_delete ? "destructive" : "ghost"}
                       onClick={() => setConfirmingDeleteCode(currency.codigo)}
                       disabled={deletingCode === currency.codigo}
                     >
-                      Excluir
+                      {currency.can_delete ? "Excluir" : "Desativar"}
                     </Button>
                   </div>
                 </div>
                 {confirmingDeleteCode === currency.codigo && (
                   <div className="mt-3 space-y-3 rounded-lg border border-expense/30 bg-expense-soft p-3">
                     <p className="text-sm text-foreground">
-                      Tem certeza? Esta ação é permanente e não pode ser desfeita.
+                      {currency.can_delete
+                        ? "Tem certeza? Esta ação é permanente e não pode ser desfeita."
+                        : "Esta moeda será apenas desativada porque é padrão ou já está em uso. Deseja continuar?"}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
                         size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(currency)}
+                        variant={currency.can_delete ? "destructive" : "outline"}
+                        onClick={() => handleRemove(currency)}
                         disabled={deletingCode === currency.codigo}
                       >
-                        {deletingCode === currency.codigo ? "Excluindo..." : "Excluir"}
+                        {deletingCode === currency.codigo
+                          ? currency.can_delete ? "Excluindo..." : "Desativando..."
+                          : currency.can_delete ? "Excluir" : "Desativar"}
                       </Button>
                       <Button
                         type="button"
@@ -249,6 +293,46 @@ export default function MoedasPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            ))
+          )}
+        </Card>
+
+        <Card className="space-y-3">
+          <h3 className="text-lg">Inativas</h3>
+          {loading ? (
+            <LoadingState label="Carregando moedas..." />
+          ) : loadError ? (
+            <EmptyState
+              title={GET_ERROR_MESSAGE}
+              description="Verifique sua conexão e tente novamente."
+              icon={<RetryIcon className="h-8 w-8 text-muted-foreground" />}
+              actionLabel="Tentar novamente"
+              onAction={loadCurrencies}
+            />
+          ) : inactiveCurrencies.length === 0 ? (
+            <EmptyState
+              title="Nenhuma moeda inativa."
+              description=""
+              icon={<TagIcon className="h-8 w-8 text-muted-foreground" />}
+            />
+          ) : (
+            inactiveCurrencies.map((currency) => (
+              <div key={currency.codigo} className="rounded-xl border border-border bg-background px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="rounded-md bg-secondary px-2 py-1 font-mono text-sm font-semibold tracking-wide text-muted-foreground">
+                      {currency.codigo}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {currency.is_default && <span className="rounded-full bg-secondary px-2 py-1">Padrão</span>}
+                      {currency.is_in_use && <span className="rounded-full bg-warning-soft px-2 py-1 text-warning">Em uso</span>}
+                    </div>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleActivate(currency)}>
+                    Reativar
+                  </Button>
+                </div>
               </div>
             ))
           )}

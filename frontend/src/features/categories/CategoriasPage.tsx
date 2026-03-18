@@ -12,16 +12,18 @@ import LoadingState from "../../components/LoadingState";
 import TransactionSheet from "../../components/TransactionSheet";
 import { getApiErrorMessage } from "../../utils/apiError";
 import {
+  activateCategory,
   createCategory,
-  deactivateCategory,
   listCategories,
+  removeCategory,
   updateCategory,
 } from "./categories.api";
 import type { Category } from "./categories.types";
 
 const GET_ERROR_MESSAGE = "Não foi possível carregar as categorias. Tente novamente.";
 const SAVE_ERROR_MESSAGE = "Não foi possível salvar a categoria. Tente novamente.";
-const DEACTIVATE_ERROR_MESSAGE = "Não foi possível desativar a categoria. Tente novamente.";
+const REMOVE_ERROR_MESSAGE = "Não foi possível atualizar a categoria. Tente novamente.";
+const ACTIVATE_ERROR_MESSAGE = "Não foi possível reativar a categoria. Tente novamente.";
 
 export default function CategoriasPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -133,11 +135,15 @@ export default function CategoriasPage() {
     }
   };
 
-  const handleDeactivate = async (category: Category) => {
-    const confirmed = window.confirm("Deseja desativar esta categoria?");
+  const handleRemove = async (category: Category) => {
+    const confirmed = window.confirm(
+      category.can_delete
+        ? "Deseja excluir esta categoria?"
+        : "Esta categoria será apenas desativada porque é padrão ou já está em uso. Deseja continuar?",
+    );
     if (!confirmed) return;
     if (!category.id) {
-      setSaveError(DEACTIVATE_ERROR_MESSAGE);
+      setSaveError(REMOVE_ERROR_MESSAGE);
       return;
     }
 
@@ -151,15 +157,38 @@ export default function CategoriasPage() {
     );
 
     try {
-      const response = await deactivateCategory(category.id);
+      const response = await removeCategory(category.id);
+      if (!isMountedRef.current) return;
+      if ((response.data as Category & { deleted?: boolean }).deleted) {
+        setCategories((current) => current.filter((item) => item.id !== category.id));
+      } else {
+        setCategories((current) =>
+          current.map((item) => (item.id === category.id ? response.data : item)),
+        );
+      }
+    } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) return;
+      setCategories(previousCategories);
+      setSaveError(getApiErrorMessage(error, REMOVE_ERROR_MESSAGE));
+    }
+  };
+
+  const handleActivate = async (category: Category) => {
+    if (!category.id) {
+      setSaveError(ACTIVATE_ERROR_MESSAGE);
+      return;
+    }
+
+    setSaveError(null);
+    try {
+      const response = await activateCategory(category.id);
       if (!isMountedRef.current) return;
       setCategories((current) =>
         current.map((item) => (item.id === category.id ? response.data : item)),
       );
     } catch (error) {
       if (!isMountedRef.current || axios.isCancel(error)) return;
-      setCategories(previousCategories);
-      setSaveError(getApiErrorMessage(error, DEACTIVATE_ERROR_MESSAGE));
+      setSaveError(getApiErrorMessage(error, ACTIVATE_ERROR_MESSAGE));
     }
   };
 
@@ -215,10 +244,14 @@ export default function CategoriasPage() {
                     <Button type="button" size="sm" variant="outline" onClick={() => openEdit(category)}>
                       Editar
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => handleDeactivate(category)}>
-                      Desativar
+                    <Button type="button" size="sm" variant="ghost" onClick={() => handleRemove(category)}>
+                      {category.can_delete ? "Excluir" : "Desativar"}
                     </Button>
                   </div>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {category.is_default && <span className="rounded-full bg-secondary px-2 py-1">Padrão</span>}
+                  {category.is_in_use && <span className="rounded-full bg-warning-soft px-2 py-1 text-warning">Em uso</span>}
                 </div>
               </div>
             ))
@@ -246,7 +279,18 @@ export default function CategoriasPage() {
           ) : (
             inactiveCategories.map((category) => (
               <div key={category.id} className="rounded-xl border border-border bg-background px-4 py-3">
-                <p className="text-sm font-medium text-muted-foreground">{category.nome}</p>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">{category.nome}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {category.is_default && <span className="rounded-full bg-secondary px-2 py-1">Padrão</span>}
+                      {category.is_in_use && <span className="rounded-full bg-warning-soft px-2 py-1 text-warning">Em uso</span>}
+                    </div>
+                  </div>
+                  <Button type="button" size="sm" variant="outline" onClick={() => handleActivate(category)}>
+                    Reativar
+                  </Button>
+                </div>
               </div>
             ))
           )}

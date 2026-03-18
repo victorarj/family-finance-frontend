@@ -7,8 +7,11 @@ import type {
 
 const normalizeCode = (value: string) => value.trim().toUpperCase();
 
-export const listCurrencies = (options?: { signal?: AbortSignal }) =>
-  client.get<Currency[]>("/currencies", { signal: options?.signal });
+export const listCurrencies = (options?: { signal?: AbortSignal; includeInactive?: boolean }) =>
+  client.get<Currency[]>("/currencies", {
+    signal: options?.signal,
+    params: options?.includeInactive ? { include_inactive: true } : undefined,
+  });
 
 export const createCurrency = (payload: CreateCurrencyPayload) =>
   client.post<Currency>("/currencies", {
@@ -20,5 +23,8 @@ export const updateCurrency = (codigo: string, payload: UpdateCurrencyPayload) =
     novo_codigo: normalizeCode(payload.novo_codigo),
   });
 
-export const deleteCurrency = (codigo: string) =>
+export const removeCurrency = (codigo: string) =>
   client.delete<Currency>(`/currencies/${normalizeCode(codigo)}`);
+
+export const activateCurrency = (codigo: string) =>
+  client.post<Currency>(`/currencies/${normalizeCode(codigo)}/activate`, {});

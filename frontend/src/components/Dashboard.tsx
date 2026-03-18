@@ -40,6 +40,7 @@ type ChecklistItemProps = {
   completed: boolean;
   ctaLabel?: string;
   onCtaClick?: () => void;
+  ctaClassName?: string;
 };
 
 function readDismissedState() {
@@ -74,6 +75,7 @@ function ChecklistItem({
   completed,
   ctaLabel,
   onCtaClick,
+  ctaClassName,
 }: ChecklistItemProps) {
   return (
     <div className="flex flex-col gap-3 rounded-xl bg-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -98,7 +100,7 @@ function ChecklistItem({
           type="button"
           size="sm"
           variant="outline"
-          className="w-full justify-center sm:w-auto"
+          className={`w-full justify-center sm:w-auto ${ctaClassName || ""}`.trim()}
           onClick={onCtaClick}
         >
           {ctaLabel}
@@ -287,6 +289,8 @@ export default function Dashboard() {
     hasActiveAccount && hasTransactions && hasPlanningStarted;
   const showCompletionState = !onboardingDismissed && allChecklistItemsCompleted;
   const showOnboardingCard = isEmptyState || showCompletionState;
+  const showPlanningCtaPulse = showPlanningPulse && showOnboardingCard;
+  const showPlanningFabPulse = showPlanningPulse && !showOnboardingCard;
 
   useEffect(() => {
     if (!showCompletionState) return undefined;
@@ -378,6 +382,7 @@ export default function Dashboard() {
                       sublabel="Defina orçamentos e despesas fixas antes de gastar"
                       completed={hasPlanningStarted}
                       ctaLabel="Planejar agora"
+                      ctaClassName={showPlanningCtaPulse ? "fab-pulse-green border-primary" : undefined}
                       onCtaClick={() => navigate("/planejamento")}
                     />
                   </div>
@@ -433,7 +438,7 @@ export default function Dashboard() {
 
       <Fab
         aria-label="Planejar mês atual"
-        className={`left-4 right-auto w-auto gap-2 px-5 md:left-6 lg:left-auto lg:right-28 ${showPlanningPulse ? "fab-pulse-green" : ""}`.trim()}
+        className={`left-4 right-auto w-auto gap-2 px-5 md:left-6 lg:left-auto lg:right-28 ${showPlanningFabPulse ? "fab-pulse-green" : ""}`.trim()}
         onClick={() => {
           setPlanFabPulseStopped(true);
           navigate("/planejamento");

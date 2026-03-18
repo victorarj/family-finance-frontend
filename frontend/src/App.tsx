@@ -49,6 +49,14 @@ import IncomeForm from "./components/IncomeForm";
 import ExpenseForm from "./components/ExpenseForm";
 import type { Expense, Income } from "./types";
 
+function blurActiveElement() {
+  if (typeof document === "undefined") return;
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur();
+  }
+}
+
 const TABS = [
   { key: "/", label: "Painel", icon: <HomeIcon className="h-5 w-5" /> },
   {
@@ -101,24 +109,28 @@ function AppContent() {
   const [expenseRefreshToken, setExpenseRefreshToken] = useState(0);
 
   const openAddIncome = () => {
+    blurActiveElement();
     setCurrentExpense(null);
     setCurrentIncome(null);
     setActiveSheet("income");
   };
 
   const openEditIncome = (income: Income) => {
+    blurActiveElement();
     setCurrentExpense(null);
     setCurrentIncome(income);
     setActiveSheet("income");
   };
 
   const openAddExpense = () => {
+    blurActiveElement();
     setCurrentIncome(null);
     setCurrentExpense(null);
     setActiveSheet("expense");
   };
 
   const openEditExpense = (expense: Expense) => {
+    blurActiveElement();
     setCurrentIncome(null);
     setCurrentExpense(expense);
     setActiveSheet("expense");
@@ -397,7 +409,10 @@ function AppContent() {
         <>
           <Fab
             aria-label="Abrir chat"
-            onClick={() => setChatOpen(true)}
+            onClick={() => {
+              blurActiveElement();
+              setChatOpen(true);
+            }}
             className="w-auto gap-2 px-5"
           >
             <ChatIcon className="h-5 w-5 text-background" />
