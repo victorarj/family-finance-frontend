@@ -79,6 +79,7 @@ export interface Category {
   is_default: boolean;
   is_in_use: boolean;
   can_delete: boolean;
+  can_edit: boolean;
 }
 
 // Currency
@@ -88,6 +89,7 @@ export interface Currency {
   is_default: boolean;
   is_in_use: boolean;
   can_delete: boolean;
+  can_edit: boolean;
 }
 
 // Priority

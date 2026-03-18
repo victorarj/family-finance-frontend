@@ -241,9 +241,11 @@ export default function CategoriasPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium text-foreground">{category.nome}</p>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => openEdit(category)}>
-                      Editar
-                    </Button>
+                    {category.can_edit && (
+                      <Button type="button" size="sm" variant="outline" onClick={() => openEdit(category)}>
+                        Editar
+                      </Button>
+                    )}
                     <Button type="button" size="sm" variant="ghost" onClick={() => handleRemove(category)}>
                       {category.can_delete ? "Excluir" : "Desativar"}
                     </Button>

@@ -125,6 +125,22 @@
   .fab-pulse-green {
     animation: fab-pulse-green 2s ease-in-out infinite;
   }
+
+  .animate-overlay-in {
+    animation: overlay-in 180ms ease-out both;
+  }
+
+  .animate-overlay-out {
+    animation: overlay-out 140ms ease-in both;
+  }
+
+  .animate-sheet-in {
+    animation: sheet-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-sheet-out {
+    animation: sheet-out 140ms ease-in both;
+  }
 }
 
 @keyframes shake-x {
@@ -150,5 +166,45 @@
   }
   50% {
     box-shadow: 0 0 0 10px hsl(var(--primary) / 0.12), var(--shadow-fab);
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sheet-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
   }
 }

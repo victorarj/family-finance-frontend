@@ -248,9 +248,11 @@ export default function MoedasPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant="outline" onClick={() => openEdit(currency)}>
-                      Editar
-                    </Button>
+                    {currency.can_edit && (
+                      <Button type="button" size="sm" variant="outline" onClick={() => openEdit(currency)}>
+                        Editar
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       size="sm"
