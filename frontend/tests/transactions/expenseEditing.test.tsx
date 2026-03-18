@@ -30,21 +30,21 @@ describe("transactions - expense editing", () => {
       />,
     );
 
-    const valueField = screen.getAllByRole("spinbutton", { name: /^Valor/i })[0];
+    const valueField = screen.getAllByRole("textbox", { name: /^Valor/i })[0];
     await user.clear(valueField);
-    await user.type(valueField, "300");
+    await user.type(valueField, "30000");
     await user.click(screen.getByRole("button", { name: "Atualizar" }));
 
     page.unmount();
     renderWithProviders(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 700.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/R\$\s*700,00/).length).toBeGreaterThan(0);
     });
 
     renderWithProviders(<PlanningPage />);
     await goToPlanningStep(4);
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 700.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/R\$\s*700,00/).length).toBeGreaterThan(0);
     });
   });
 });
