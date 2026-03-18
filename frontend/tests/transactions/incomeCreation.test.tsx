@@ -26,10 +26,11 @@ describe("transactions - income creation", () => {
       />,
     );
 
+    expect(screen.getByRole("textbox", { name: /Valor/i })).toHaveFocus();
     await user.type(screen.getByRole("textbox", { name: /Nome da receita/i }), "Freelance");
-    const valueInput = screen.getByRole("spinbutton", { name: /Valor/i });
+    const valueInput = screen.getByRole("textbox", { name: /Valor/i });
     await user.clear(valueInput);
-    await user.type(valueInput, "500");
+    await user.type(valueInput, "50000");
     await user.type(
       screen.getByLabelText(/Data de recebimento/i),
       `${CANONICAL_MONTH}-10`,
@@ -40,7 +41,7 @@ describe("transactions - income creation", () => {
     renderWithProviders(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("R$ 1500.00").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/R\$\s*1\.500,00/).length).toBeGreaterThan(0);
     });
   });
 });

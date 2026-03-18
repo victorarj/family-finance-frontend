@@ -92,6 +92,8 @@ export default function IncomeForm({
 
       <FormField label="Valor" required>
         <Input
+          type="text"
+          autoFocus
           inputMode="decimal"
           value={formatCurrencyInput(form.valor)}
           onChange={(e) =>

@@ -1,7 +1,7 @@
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 
 type FormFieldProps = PropsWithChildren<{
-  label: string;
+  label: ReactNode;
   required?: boolean;
   helperText?: string;
   error?: string;
