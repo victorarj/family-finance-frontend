@@ -47,6 +47,7 @@ import TransactionModalContext from "./context/TransactionModalContext";
 import TransactionSheet from "./components/TransactionSheet";
 import IncomeForm from "./components/IncomeForm";
 import ExpenseForm from "./components/ExpenseForm";
+import type { Expense, Income } from "./types";
 
 const TABS = [
   { key: "/", label: "Painel", icon: <HomeIcon className="h-5 w-5" /> },
@@ -93,28 +94,49 @@ function AppContent() {
   const isTablet = viewportMode === "tablet";
   const isDesktop = viewportMode === "desktop";
   const [isChatOpen, setChatOpen] = useState(false);
-  const [isIncomeSheetOpen, setIncomeSheetOpen] = useState(false);
-  const [isExpenseSheetOpen, setExpenseSheetOpen] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<"none" | "income" | "expense">("none");
+  const [currentIncome, setCurrentIncome] = useState<Income | null>(null);
+  const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
   const [incomeRefreshToken, setIncomeRefreshToken] = useState(0);
   const [expenseRefreshToken, setExpenseRefreshToken] = useState(0);
 
   const openAddIncome = () => {
-    setExpenseSheetOpen(false);
-    setIncomeSheetOpen(true);
+    setCurrentExpense(null);
+    setCurrentIncome(null);
+    setActiveSheet("income");
+  };
+
+  const openEditIncome = (income: Income) => {
+    setCurrentExpense(null);
+    setCurrentIncome(income);
+    setActiveSheet("income");
   };
 
   const openAddExpense = () => {
-    setIncomeSheetOpen(false);
-    setExpenseSheetOpen(true);
+    setCurrentIncome(null);
+    setCurrentExpense(null);
+    setActiveSheet("expense");
+  };
+
+  const openEditExpense = (expense: Expense) => {
+    setCurrentIncome(null);
+    setCurrentExpense(expense);
+    setActiveSheet("expense");
+  };
+
+  const closeSheet = () => {
+    setActiveSheet("none");
+    setCurrentIncome(null);
+    setCurrentExpense(null);
   };
 
   const handleIncomeSaved = () => {
-    setIncomeSheetOpen(false);
+    closeSheet();
     setIncomeRefreshToken((current) => current + 1);
   };
 
   const handleExpenseSaved = () => {
-    setExpenseSheetOpen(false);
+    closeSheet();
     setExpenseRefreshToken((current) => current + 1);
   };
 
@@ -156,7 +178,21 @@ function AppContent() {
   }
 
   return (
-    <TransactionModalContext.Provider value={{ openAddIncome, openAddExpense, incomeRefreshToken, expenseRefreshToken }}>
+    <TransactionModalContext.Provider
+      value={{
+        activeSheet,
+        isAnySheetOpen: activeSheet !== "none",
+        currentIncome,
+        currentExpense,
+        openAddIncome,
+        openEditIncome,
+        openAddExpense,
+        openEditExpense,
+        closeSheet,
+        incomeRefreshToken,
+        expenseRefreshToken,
+      }}
+    >
       <div
         className={`min-h-dvh ${isPlanningRoute ? "bg-secondary" : "bg-background"}`}
       >
@@ -370,30 +406,38 @@ function AppContent() {
           <AiChatModal isOpen={isChatOpen} onClose={() => setChatOpen(false)} />
 
           <TransactionSheet
-            open={isIncomeSheetOpen}
-            onOpenChange={setIncomeSheetOpen}
-            title="Nova receita"
+            open={activeSheet === "income"}
+            onOpenChange={(open) => {
+              if (!open) {
+                closeSheet();
+              }
+            }}
+            title={currentIncome ? "Editar receita" : "Nova receita"}
             description="Preencha os campos para salvar a receita."
           >
             <IncomeForm
-              income={null}
+              income={currentIncome}
               currentUserEmail={auth.userEmail || ""}
               onSaved={handleIncomeSaved}
-              onCancel={() => setIncomeSheetOpen(false)}
+              onCancel={closeSheet}
             />
           </TransactionSheet>
 
           <TransactionSheet
-            open={isExpenseSheetOpen}
-            onOpenChange={setExpenseSheetOpen}
-            title="Nova despesa"
+            open={activeSheet === "expense"}
+            onOpenChange={(open) => {
+              if (!open) {
+                closeSheet();
+              }
+            }}
+            title={currentExpense ? "Editar despesa" : "Nova despesa"}
             description="Preencha os campos para salvar a despesa."
           >
             <ExpenseForm
-              expense={null}
+              expense={currentExpense}
               currentUserEmail={auth.userEmail || ""}
               onSaved={handleExpenseSaved}
-              onCancel={() => setExpenseSheetOpen(false)}
+              onCancel={closeSheet}
             />
           </TransactionSheet>
         </>

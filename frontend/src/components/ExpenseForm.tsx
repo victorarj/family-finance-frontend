@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { list as listBankAccounts } from "../apis/bankAccounts";
@@ -5,8 +6,10 @@ import { list as listCategories } from "../apis/categories";
 import { create, update } from "../apis/expenses";
 import { list as listPriorities } from "../apis/priorities";
 import type { BankAccount, Category, Expense, Priority } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 import { formatDate, formatCurrencyInput, parseCurrencyInput } from "../utils/formatters";
 import { normalizeDisplayText } from "../utils/text";
+import { STORAGE_KEYS } from "../utils/storage";
 import Button from "./Button";
 import FormField from "./FormField";
 import { ChevronDownIcon, ChevronRightIcon } from "./Icons";
@@ -20,9 +23,6 @@ interface ExpenseFormProps {
   onSaved: (expense: Expense) => void;
   onCancel: () => void;
 }
-
-const EXPENSE_LAST_CATEGORY_KEY = "expense_last_categoria";
-const EXPENSE_LAST_ACCOUNT_KEY = "expense_last_conta";
 
 function dateToday() {
   return new Date().toISOString().slice(0, 10);
@@ -87,6 +87,7 @@ function buildExpenseName(categoryName: string, date: string) {
 
 export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCancel }: ExpenseFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const isMountedRef = useRef(true);
   const [form, setForm] = useState<Expense>(initialExpense(currentUserEmail));
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [dismissedBankWarning, setDismissedBankWarning] = useState(false);
@@ -98,13 +99,23 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
     const loadDropdownData = async () => {
       try {
         const [catsRes, prioritiesRes, banksRes] = await Promise.all([
-          listCategories(),
-          listPriorities(),
-          listBankAccounts({ activeOnly: !expense }),
+          listCategories({ signal: controller.signal }),
+          listPriorities({ signal: controller.signal }),
+          listBankAccounts({ activeOnly: !expense, signal: controller.signal }),
         ]);
+        if (controller.signal.aborted) return;
         setCategories(
           Array.isArray(catsRes.data)
             ? catsRes.data.map((category) => ({
@@ -116,11 +127,13 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         setPriorities(Array.isArray(prioritiesRes.data) ? prioritiesRes.data : []);
         setBankAccounts(Array.isArray(banksRes.data) ? banksRes.data : []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao carregar filtros");
+        if (axios.isCancel(err)) return;
+        setError(getApiErrorMessage(err, "Não foi possível carregar os dados do formulário."));
       }
     };
 
-    loadDropdownData();
+    void loadDropdownData();
+    return () => controller.abort();
   }, [expense]);
 
   const selectableAccounts = useMemo(
@@ -135,8 +148,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
     if (expense) return;
     if (!categories.length && !priorities.length && !selectableAccounts.length) return;
 
-    const storedCategoryId = readStoredId(EXPENSE_LAST_CATEGORY_KEY);
-    const storedAccountId = readStoredId(EXPENSE_LAST_ACCOUNT_KEY);
+    const storedCategoryId = readStoredId(STORAGE_KEYS.expenseLastCategory);
+    const storedAccountId = readStoredId(STORAGE_KEYS.expenseLastAccount);
     const fallbackPriorityId = findDefaultIdByName(priorities, ["baixa", "low"]);
     const fallbackAccountId = selectableAccounts[0]?.id || 0;
     const fallbackCategoryId = categories[0]?.id || 0;
@@ -202,10 +215,11 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       };
       const action = expense ? update(expense.id || 0, payload) : create(payload);
       const res = await action;
+      if (!isMountedRef.current) return;
 
       if (!expense && typeof window !== "undefined") {
-        window.localStorage.setItem(EXPENSE_LAST_CATEGORY_KEY, String(payload.categoria_id));
-        window.localStorage.setItem(EXPENSE_LAST_ACCOUNT_KEY, String(payload.conta_bancaria_id));
+        window.localStorage.setItem(STORAGE_KEYS.expenseLastCategory, String(payload.categoria_id));
+        window.localStorage.setItem(STORAGE_KEYS.expenseLastAccount, String(payload.conta_bancaria_id));
       }
 
       onSaved(res.data);
@@ -214,9 +228,12 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         setShowAdvanced(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar despesa");
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível salvar a despesa."));
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -293,7 +310,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
 
         {expense && selectedAccount && !selectedAccount.ativo && (
           <p className="text-xs text-muted-foreground">
-            Esta despesa usa uma conta atualmente inativa. O histórico permanece preservado.
+            Esta despesa está vinculada a uma conta inativa. Você pode manter a conta atual ou trocar para uma conta ativa.
           </p>
         )}
       </div>

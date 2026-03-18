@@ -1,8 +1,6 @@
-export interface Category {
-  id: number;
-  nome: string;
-  ativo: boolean;
-}
+import type { Category as SharedCategory } from "../../types";
+
+export type Category = SharedCategory;
 
 export interface CreateCategoryPayload {
   nome: string;

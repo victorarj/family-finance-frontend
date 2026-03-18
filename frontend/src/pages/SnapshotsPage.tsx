@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
 import Card from "../components/Card";
 import Container from "../components/Container";
 import EmptyState from "../components/EmptyState";
@@ -8,6 +9,7 @@ import TransactionSheet from "../components/TransactionSheet";
 import { RetryIcon } from "../components/Icons";
 import { getDetails, list } from "../apis/monthlySnapshots";
 import type { SnapshotDetails, SnapshotMensal } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 import { formatCurrency, formatMonthLabel } from "../utils/formatters";
 
 export default function SnapshotsPage() {
@@ -18,25 +20,29 @@ export default function SnapshotsPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const detailsControllerRef = useRef<AbortController | null>(null);
 
-  const loadSnapshots = async () => {
+  const loadSnapshots = async (signal?: AbortSignal) => {
     try {
       setLoading(true);
       setLoadingTimedOut(false);
-      const response = await list();
+      const response = await list(undefined, { signal });
       setSnapshots(Array.isArray(response.data) ? response.data : []);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao carregar snapshots",
-      );
+      if (axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível carregar os snapshots."));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    void loadSnapshots();
+    const controller = new AbortController();
+    void loadSnapshots(controller.signal);
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -51,19 +57,26 @@ export default function SnapshotsPage() {
 
   const onViewDetails = async (id?: number) => {
     if (!id) return;
+    detailsControllerRef.current?.abort();
+    const controller = new AbortController();
+    detailsControllerRef.current = controller;
     setSelectedId(id);
     setDetailsLoading(true);
     try {
-      const response = await getDetails(id);
+      const response = await getDetails(id, { signal: controller.signal });
       setSelected(response.data);
       setError(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao carregar detalhes",
-      );
+      if (axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível carregar os detalhes do snapshot."));
       setSelected(null);
     } finally {
-      setDetailsLoading(false);
+      if (detailsControllerRef.current === controller) {
+        detailsControllerRef.current = null;
+      }
+      if (!controller.signal.aborted) {
+        setDetailsLoading(false);
+      }
     }
   };
 
@@ -129,8 +142,11 @@ export default function SnapshotsPage() {
         open={selectedId !== null}
         onOpenChange={(open) => {
           if (!open) {
+            detailsControllerRef.current?.abort();
+            detailsControllerRef.current = null;
             setSelectedId(null);
             setSelected(null);
+            setDetailsLoading(false);
           }
         }}
         title={

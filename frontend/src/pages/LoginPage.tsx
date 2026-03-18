@@ -6,6 +6,7 @@ import Card from "../components/Card";
 import Container from "../components/Container";
 import FormField from "../components/FormField";
 import Input from "../components/Input";
+import { getApiErrorMessage } from "../utils/apiError";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -25,7 +26,7 @@ export default function LoginPage() {
       await auth.login(email, senha);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha no login");
+      setError(getApiErrorMessage(err, "Não foi possível fazer login."));
     }
   };
 

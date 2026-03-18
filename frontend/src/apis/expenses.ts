@@ -1,7 +1,8 @@
 import client from "../utils/apiClient";
 import type { Expense } from "../types";
 
-export const list = () => client.get<Expense[]>("/expenses/");
+export const list = (options?: { signal?: AbortSignal }) =>
+  client.get<Expense[]>("/expenses/", { signal: options?.signal });
 export const create = (data: Expense) =>
   client.post<Expense>("/expenses/", data);
 export const update = (id: number, data: Expense) =>

@@ -1,6 +1,8 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { list, remove } from "../apis/income";
 import type { Income } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 import Button from "./Button";
 import Card from "./Card";
 import EmptyState from "./EmptyState";
@@ -19,21 +21,26 @@ export default function IncomeList({ onEdit, onCreate, refreshTrigger }: IncomeL
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchIncomes = async () => {
       try {
         setLoading(true);
-        const response = await list();
+        const response = await list({ signal: controller.signal });
         setItems(Array.isArray(response.data) ? response.data : []);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao carregar receitas");
+        if (axios.isCancel(err)) return;
+        setError(getApiErrorMessage(err, "Não foi possível carregar as receitas."));
         setItems([]);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchIncomes();
+    void fetchIncomes();
+    return () => controller.abort();
   }, [refreshTrigger]);
 
   const handleDelete = async (id: number | undefined, locked?: boolean) => {
@@ -47,7 +54,7 @@ export default function IncomeList({ onEdit, onCreate, refreshTrigger }: IncomeL
       await remove(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao excluir receita");
+      setError(getApiErrorMessage(err, "Não foi possível excluir a receita."));
     }
   };
 

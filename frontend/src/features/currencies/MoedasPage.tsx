@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/Button";
@@ -10,6 +10,7 @@ import { ChevronLeftIcon, RetryIcon, TagIcon } from "../../components/Icons";
 import Input from "../../components/Input";
 import LoadingState from "../../components/LoadingState";
 import TransactionSheet from "../../components/TransactionSheet";
+import { getApiErrorMessage } from "../../utils/apiError";
 import {
   createCurrency,
   deleteCurrency,
@@ -27,19 +28,6 @@ const DUPLICATE_ERROR_MESSAGE = "Esta moeda já existe.";
 const sortCurrencies = (items: Currency[]) =>
   [...items].sort((left, right) => left.codigo.localeCompare(right.codigo));
 
-function isDuplicateError(error: unknown) {
-  if (!axios.isAxiosError(error)) {
-    return false;
-  }
-
-  if (error.response?.status === 409) {
-    return true;
-  }
-
-  const message = String(error.response?.data?.message ?? "").toLowerCase();
-  return message.includes("already") || message.includes("duplicate") || message.includes("existe");
-}
-
 export default function MoedasPage() {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,25 +39,40 @@ export default function MoedasPage() {
   const [codigo, setCodigo] = useState("");
   const [confirmingDeleteCode, setConfirmingDeleteCode] = useState<string | null>(null);
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   const sortedCurrencies = useMemo(() => sortCurrencies(currencies), [currencies]);
 
-  const loadCurrencies = async () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadCurrencies = async (signal?: AbortSignal) => {
     setLoading(true);
     setLoadError(false);
     setSaveError(null);
     try {
-      const response = await listCurrencies();
+      const response = await listCurrencies({ signal });
+      if (signal?.aborted || !isMountedRef.current) return;
       setCurrencies(sortCurrencies(Array.isArray(response.data) ? response.data : []));
-    } catch {
+    } catch (error) {
+      if (axios.isCancel(error)) return;
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted && isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadCurrencies();
+    const controller = new AbortController();
+    void loadCurrencies(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const closeSheet = () => {
@@ -108,6 +111,7 @@ export default function MoedasPage() {
     try {
       if (editing) {
         const response = await updateCurrency(editing.codigo, { novo_codigo: normalizedCode });
+        if (!isMountedRef.current) return;
         setCurrencies((current) =>
           sortCurrencies(
             current.map((item) =>
@@ -117,17 +121,20 @@ export default function MoedasPage() {
         );
       } else {
         const response = await createCurrency({ codigo: normalizedCode });
+        if (!isMountedRef.current) return;
         setCurrencies((current) => sortCurrencies([...current, response.data]));
       }
       closeSheet();
     } catch (error: unknown) {
-      if (isDuplicateError(error)) {
-        setSaveError(DUPLICATE_ERROR_MESSAGE);
-      } else {
-        setSaveError(editing ? UPDATE_ERROR_MESSAGE : CREATE_ERROR_MESSAGE);
-      }
+      if (!isMountedRef.current || axios.isCancel(error)) return;
+      setSaveError(
+        getApiErrorMessage(
+          error,
+          editing ? UPDATE_ERROR_MESSAGE : CREATE_ERROR_MESSAGE,
+        ) || DUPLICATE_ERROR_MESSAGE,
+      );
     } finally {
-      setSaving(false);
+      if (isMountedRef.current) setSaving(false);
     }
   };
 
@@ -139,12 +146,14 @@ export default function MoedasPage() {
 
     try {
       await deleteCurrency(currency.codigo);
+      if (!isMountedRef.current) return;
       setConfirmingDeleteCode(null);
-    } catch {
+    } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) return;
       setCurrencies(previousCurrencies);
-      setSaveError(DELETE_ERROR_MESSAGE);
+      setSaveError(getApiErrorMessage(error, DELETE_ERROR_MESSAGE));
     } finally {
-      setDeletingCode(null);
+      if (isMountedRef.current) setDeletingCode(null);
     }
   };
 

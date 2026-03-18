@@ -5,8 +5,9 @@ import type {
   UpdateCategoryPayload,
 } from "./categories.types";
 
-export const listCategories = (includeInactive = false) =>
+export const listCategories = (includeInactive = false, options?: { signal?: AbortSignal }) =>
   client.get<Category[]>("/categories", {
+    signal: options?.signal,
     params: includeInactive ? { include_inactive: true } : undefined,
   });
 

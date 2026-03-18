@@ -4,6 +4,8 @@ import { login as apiLogin, register as apiRegister } from "../apis/auth";
 import { completeOnboarding as apiCompleteOnboarding, getCurrentUser } from "../apis/users";
 import type { User } from "../types";
 import { AUTH_EXPIRED_EVENT } from "../utils/apiClient";
+import { clearClientSession } from "../utils/session";
+import { STORAGE_KEYS } from "../utils/storage";
 
 interface AuthContextType {
   token: string | null;
@@ -21,14 +23,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.token));
   const [userId, setUserId] = useState<number | null>(() => {
-    const raw = localStorage.getItem("userId");
+    const raw = localStorage.getItem(STORAGE_KEYS.userId);
     return raw ? Number(raw) : null;
   });
-  const [userEmail, setUserEmail] = useState<string | null>(() => localStorage.getItem("userEmail"));
+  const [userEmail, setUserEmail] = useState<string | null>(() => localStorage.getItem(STORAGE_KEYS.userEmail));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isProfileLoading, setProfileLoading] = useState<boolean>(() => Boolean(localStorage.getItem("token")));
+  const [isProfileLoading, setProfileLoading] = useState<boolean>(() => Boolean(localStorage.getItem(STORAGE_KEYS.token)));
 
   const logout = useCallback(() => {
     setToken(null);
@@ -36,13 +38,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserEmail(null);
     setCurrentUser(null);
     setProfileLoading(false);
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userEmail");
+    clearClientSession();
   }, []);
 
   const refreshCurrentUser = async () => {
-    if (!localStorage.getItem("token")) {
+    if (!localStorage.getItem(STORAGE_KEYS.token)) {
       setCurrentUser(null);
       setProfileLoading(false);
       return null;
@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setCurrentUser(response.data);
       setUserId(response.data.id || null);
       setUserEmail(response.data.email || null);
-      if (response.data.id) localStorage.setItem("userId", String(response.data.id));
-      if (response.data.email) localStorage.setItem("userEmail", response.data.email);
+      if (response.data.id) localStorage.setItem(STORAGE_KEYS.userId, String(response.data.id));
+      if (response.data.email) localStorage.setItem(STORAGE_KEYS.userEmail, response.data.email);
       return response.data;
     } finally {
       setProfileLoading(false);
@@ -91,9 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(token);
     setUserId(responseUserId);
     setUserEmail(responseEmail || email);
-    localStorage.setItem("token", token);
-    localStorage.setItem("userId", String(responseUserId));
-    localStorage.setItem("userEmail", responseEmail || email);
+    localStorage.setItem(STORAGE_KEYS.token, token);
+    localStorage.setItem(STORAGE_KEYS.userId, String(responseUserId));
+    localStorage.setItem(STORAGE_KEYS.userEmail, responseEmail || email);
     await refreshCurrentUser();
   };
 
@@ -106,8 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentUser(response.data);
     setUserId(response.data.id || null);
     setUserEmail(response.data.email || null);
-    if (response.data.id) localStorage.setItem("userId", String(response.data.id));
-    if (response.data.email) localStorage.setItem("userEmail", response.data.email);
+    if (response.data.id) localStorage.setItem(STORAGE_KEYS.userId, String(response.data.id));
+    if (response.data.email) localStorage.setItem(STORAGE_KEYS.userEmail, response.data.email);
     return response.data;
   };
 

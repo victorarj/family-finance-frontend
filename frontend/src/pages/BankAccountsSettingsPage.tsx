@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -34,21 +35,26 @@ export default function BankAccountsSettingsPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<BankAccount | null>(null);
 
-  const loadAccounts = async () => {
+  const loadAccounts = async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await listBankAccounts();
+      const response = await listBankAccounts({ signal });
       setAccounts(Array.isArray(response.data) ? response.data : []);
     } catch (loadError) {
+      if (axios.isCancel(loadError)) return;
       setError(getApiErrorMessage(loadError, "Falha ao carregar contas"));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadAccounts();
+    const controller = new AbortController();
+    void loadAccounts(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const handleSave = async (value: BankAccountInput) => {

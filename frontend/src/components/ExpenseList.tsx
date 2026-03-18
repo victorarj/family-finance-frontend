@@ -1,6 +1,8 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { list, remove } from "../apis/expenses";
 import type { Expense } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 import Button from "./Button";
 import Card from "./Card";
 import EmptyState from "./EmptyState";
@@ -19,21 +21,26 @@ export default function ExpenseList({ onEdit, onCreate, refreshTrigger }: Expens
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchExpenses = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await list();
+        const response = await list({ signal: controller.signal });
         setItems(Array.isArray(response.data) ? response.data : []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao carregar despesas");
+        if (axios.isCancel(err)) return;
+        setError(getApiErrorMessage(err, "Não foi possível carregar as despesas."));
         setItems([]);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchExpenses();
+    void fetchExpenses();
+    return () => controller.abort();
   }, [refreshTrigger]);
 
   const handleDelete = async (id: number | undefined, locked?: boolean) => {
@@ -47,7 +54,7 @@ export default function ExpenseList({ onEdit, onCreate, refreshTrigger }: Expens
       await remove(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao excluir despesa");
+      setError(getApiErrorMessage(err, "Não foi possível excluir a despesa."));
     }
   };
 

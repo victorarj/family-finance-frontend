@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { create as createBankAccount, list as listBankAccounts } from "../apis/bankAccounts";
@@ -9,6 +10,7 @@ import FormField from "../components/FormField";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import type { BankAccount, UserPreferences } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 
 type Step = 1 | 2 | 3;
 
@@ -58,16 +60,16 @@ export default function OnboardingPage() {
   const [accountForm, setAccountForm] = useState(DEFAULT_ACCOUNT);
 
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
 
     async function bootstrap() {
       try {
         const [preferencesResponse, accountsResponse] = await Promise.all([
-          getPreferences().catch(() => ({ data: null })),
-          listBankAccounts().catch(() => ({ data: [] as BankAccount[] })),
+          getPreferences({ signal: controller.signal }).catch(() => ({ data: null })),
+          listBankAccounts({ signal: controller.signal }).catch(() => ({ data: [] as BankAccount[] })),
         ]);
 
-        if (!isMounted) return;
+        if (controller.signal.aborted) return;
 
         if (preferencesResponse.data) {
           setPreferences({
@@ -82,11 +84,11 @@ export default function OnboardingPage() {
 
         setAccounts(accountsResponse.data ?? []);
       } catch {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setError("Nao foi possivel carregar o onboarding.");
         }
       } finally {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setIsBootstrapping(false);
         }
       }
@@ -95,7 +97,7 @@ export default function OnboardingPage() {
     bootstrap();
 
     return () => {
-      isMounted = false;
+      controller.abort();
     };
   }, []);
 
@@ -114,7 +116,7 @@ export default function OnboardingPage() {
       await savePreferences(preferences);
       setStep(2);
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Falha ao salvar preferencias.");
+      setError(getApiErrorMessage(submissionError, "Não foi possível salvar as preferências."));
     } finally {
       setIsSavingPreferences(false);
     }
@@ -141,7 +143,7 @@ export default function OnboardingPage() {
       setAccountForm(DEFAULT_ACCOUNT);
       setStep(3);
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Falha ao criar conta.");
+      setError(getApiErrorMessage(submissionError, "Não foi possível criar a conta."));
     } finally {
       setIsSavingAccount(false);
     }
@@ -158,7 +160,9 @@ export default function OnboardingPage() {
       }
       setStep(3);
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Falha ao carregar contas.");
+      if (!axios.isCancel(submissionError)) {
+        setError(getApiErrorMessage(submissionError, "Não foi possível carregar as contas."));
+      }
     }
   };
 
@@ -170,7 +174,7 @@ export default function OnboardingPage() {
       await auth.completeOnboarding();
       navigate("/", { replace: true });
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : "Falha ao concluir onboarding.");
+      setError(getApiErrorMessage(submissionError, "Não foi possível concluir o onboarding."));
     } finally {
       setIsCompleting(false);
     }

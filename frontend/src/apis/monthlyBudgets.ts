@@ -1,8 +1,9 @@
 import client from "../utils/apiClient";
 import type { BudgetMensal } from "../types";
 
-export const list = (mes?: string) =>
+export const list = (mes?: string, options?: { signal?: AbortSignal }) =>
   client.get<BudgetMensal[]>("/monthly-budgets/", {
+    signal: options?.signal,
     params: mes ? { mes } : undefined,
   });
 export const create = (data: BudgetMensal) =>

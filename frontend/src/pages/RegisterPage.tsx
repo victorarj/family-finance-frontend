@@ -6,6 +6,7 @@ import Card from "../components/Card";
 import Container from "../components/Container";
 import FormField from "../components/FormField";
 import Input from "../components/Input";
+import { getApiErrorMessage } from "../utils/apiError";
 
 export default function RegisterPage() {
   const [nome, setNome] = useState("");
@@ -25,7 +26,7 @@ export default function RegisterPage() {
       await auth.register({ nome, email, senha, telefone });
       navigate("/login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha no cadastro");
+      setError(getApiErrorMessage(err, "Não foi possível concluir o cadastro."));
     }
   };
 

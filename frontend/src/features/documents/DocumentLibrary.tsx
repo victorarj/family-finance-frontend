@@ -39,6 +39,8 @@ export default function DocumentLibrary({ onDocumentsChange }: DocumentLibraryPr
   const uploadProgressTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
       isMountedRef.current = false;
       if (uploadProgressTimeoutRef.current !== null) {

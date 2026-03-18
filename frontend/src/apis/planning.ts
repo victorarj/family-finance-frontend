@@ -9,13 +9,20 @@ export interface PlanningSummary {
   largest_decrease_category: string | null;
 }
 
-export const getSummary = (mes: string) =>
-  client.get<PlanningSummary>("/planning/summary", { params: { mes } });
+export const getSummary = (mes: string, options?: { signal?: AbortSignal }) =>
+  client.get<PlanningSummary>("/planning/summary", {
+    signal: options?.signal,
+    params: { mes },
+  });
 
-export const getProjection = (mes: string) =>
-  client.get<PlanningProjection>("/planning/projection", { params: { mes } });
+export const getProjection = (mes: string, options?: { signal?: AbortSignal }) =>
+  client.get<PlanningProjection>("/planning/projection", {
+    signal: options?.signal,
+    params: { mes },
+  });
 
-export const getStatus = (mes: string) =>
+export const getStatus = (mes: string, options?: { signal?: AbortSignal }) =>
   client.get<{ month: string; status: MonthStatus }>("/planning/status", {
+    signal: options?.signal,
     params: { mes },
   });

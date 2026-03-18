@@ -10,6 +10,7 @@ import { listDocumentsWithOptions, queryDocuments } from "../../features/documen
 import { DocumentStatus, type ChatMessage, type Document } from "../../features/documents/documents.types";
 import type { AiChatModalProps, QuickAction } from "./AiChatModal.types";
 import { useTransactionModal } from "../../context/TransactionModalContext";
+import { getApiErrorMessage } from "../../utils/apiError";
 
 const INITIAL_GREETING = "Olá! Sou seu assistente financeiro. Como posso te ajudar hoje?";
 
@@ -61,6 +62,8 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
   const queryControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     return () => {
       isMountedRef.current = false;
       queryControllerRef.current?.abort();
@@ -197,7 +200,7 @@ export default function AiChatModal({ isOpen, onClose }: AiChatModalProps) {
         {
           id: createMessageId(),
           role: "assistant",
-          content: error instanceof Error ? error.message : "The assistant could not answer right now.",
+          content: getApiErrorMessage(error, "Não foi possível responder agora. Tente novamente em instantes."),
           timestamp: new Date().toISOString(),
           error: true,
         },

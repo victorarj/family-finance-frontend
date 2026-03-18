@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { list as listCategories } from "../apis/categories";
 import {
@@ -41,6 +42,7 @@ import MonthNavigator from "../components/MonthNavigator";
 import PlanningLayout from "../components/PlanningLayout";
 import Select from "../components/Select";
 import TransactionSheet from "../components/TransactionSheet";
+import { getApiErrorMessage } from "../utils/apiError";
 import { normalizeDisplayText } from "../utils/text";
 import { formatCurrency, formatMonthLabel, getMonthStatusLabel } from "../utils/formatters";
 
@@ -117,6 +119,10 @@ function formatMonthName(month: string) {
   return new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(date).replace(/^./, (char) => char.toUpperCase());
 }
 
+function getRecurringTypeLabel(type: TransacaoRecorrente["tipo"]) {
+  return type === "income" ? "Receita" : "Despesa";
+}
+
 export default function PlanningPage() {
   const navigate = useNavigate();
   const [mes, setMes] = useState(monthNow());
@@ -136,6 +142,7 @@ export default function PlanningPage() {
     null,
   );
   const [completionState, setCompletionState] = useState<CompletionState | null>(null);
+  const isMountedRef = useRef(true);
 
   const [budgetForm, setBudgetForm] = useState<BudgetMensal>({
     mes,
@@ -154,6 +161,8 @@ export default function PlanningPage() {
 
   const canGoNext = step < STEPS.length - 1;
   const canGoPrev = step > 0;
+  const clampStep = (nextStep: number) =>
+    Math.max(0, Math.min(nextStep, STEPS.length - 1));
 
   const projectionTone = useMemo(() => {
     if (!projection) return "text-foreground";
@@ -175,7 +184,15 @@ export default function PlanningPage() {
       : `Atenção: seu plano prevê um déficit de ${formattedBalance}.`;
   }, [completionState]);
 
-  const reload = useCallback(async () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const reload = useCallback(async (signal?: AbortSignal) => {
     try {
       setError(null);
       const [
@@ -186,13 +203,14 @@ export default function PlanningPage() {
         snapshotsRes,
         categoriesRes,
       ] = await Promise.all([
-        getStatus(mes),
-        getProjection(mes),
-        listBudgets(mes),
-        listRecurring(),
-        listSnapshots(mes),
-        listCategories(),
+        getStatus(mes, { signal }),
+        getProjection(mes, { signal }),
+        listBudgets(mes, { signal }),
+        listRecurring({ signal }),
+        listSnapshots(mes, { signal }),
+        listCategories({ signal }),
       ]);
+      if (signal?.aborted || !isMountedRef.current) return;
       setStatus(statusRes.data.status);
       setProjection(projectionRes.data);
       setBudgets(Array.isArray(budgetsRes.data) ? budgetsRes.data : []);
@@ -207,16 +225,17 @@ export default function PlanningPage() {
           : [],
       );
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao carregar planejamento",
-      );
+      if (axios.isCancel(err) || !isMountedRef.current) return;
+      setError(getApiErrorMessage(err, "Não foi possível carregar o planejamento."));
     }
   }, [mes]);
 
   useEffect(() => {
+    const controller = new AbortController();
     setBudgetForm((prev) => ({ ...prev, mes }));
     setCompletionState(null);
-    void reload();
+    void reload(controller.signal);
+    return () => controller.abort();
   }, [mes, reload]);
 
   const onCreateBudget = async (e: React.FormEvent) => {
@@ -224,14 +243,14 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await saveBudget(budgetForm);
+      if (!isMountedRef.current) return;
       setBudgetForm((prev) => ({ ...prev, valor_planejado: 0 }));
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao salvar orçamento",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível salvar o orçamento."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -240,14 +259,14 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await saveRecurring(recurringForm);
+      if (!isMountedRef.current) return;
       setRecurringForm(emptyRecurringForm());
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao salvar recorrente",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível salvar a transação recorrente."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -276,14 +295,14 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await updateRecurring(editingRecurringId, recurringForm);
+      if (!isMountedRef.current) return;
       cancelRecurringEdit();
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao atualizar recorrente",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível atualizar a transação recorrente."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -292,16 +311,16 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await removeRecurring(item.id);
+      if (!isMountedRef.current) return;
       if (editingRecurringId === item.id) {
         cancelRecurringEdit();
       }
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao excluir recorrente",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível excluir a transação recorrente."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -309,6 +328,7 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await createSnapshot({ mes, confirm_negative: confirmNegative });
+      if (!isMountedRef.current) return;
       setConfirmSheetOpen(false);
       await reload();
       setStep(STEPS.length - 1);
@@ -317,9 +337,10 @@ export default function PlanningPage() {
         projectedBalance: projection ? toNumber(projection.projected_balance) : 0,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar snapshot");
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível criar o snapshot."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -352,14 +373,14 @@ export default function PlanningPage() {
       await updateBudget(editingBudgetId, {
         valor_planejado: Number(editingBudgetValue),
       });
+      if (!isMountedRef.current) return;
       cancelBudgetEdit();
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao atualizar orçamento",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível atualizar o orçamento."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -368,16 +389,16 @@ export default function PlanningPage() {
     setBusy(true);
     try {
       await removeBudget(budget.id);
+      if (!isMountedRef.current) return;
       if (editingBudgetId === budget.id) {
         cancelBudgetEdit();
       }
       await reload();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Falha ao excluir orçamento",
-      );
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível excluir o orçamento."));
     } finally {
-      setBusy(false);
+      if (isMountedRef.current) setBusy(false);
     }
   };
 
@@ -415,7 +436,7 @@ export default function PlanningPage() {
                     key={shortLabel}
                     type="button"
                     disabled={completionState !== null}
-                    onClick={() => setStep(idx)}
+                    onClick={() => setStep(clampStep(idx))}
                     className={`min-w-[9rem] rounded-md px-3 py-2 text-left text-xs md:min-w-0 ${
                       active
                         ? "bg-primary text-background"
@@ -562,7 +583,7 @@ export default function PlanningPage() {
                       >
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                           <p className="min-w-0">
-                            {item.tipo} - {item.descricao}: {formatCurrency(item.valor)}
+                            {getRecurringTypeLabel(item.tipo)} - {item.descricao}: {formatCurrency(item.valor)}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <Button
@@ -842,7 +863,7 @@ export default function PlanningPage() {
                 variant="outline"
                 className={`w-full sm:w-auto ${!canGoPrev ? "cursor-not-allowed border-border bg-muted text-muted-foreground hover:bg-muted" : ""}`}
                 disabled={!canGoPrev}
-                onClick={() => setStep((prev) => prev - 1)}
+                onClick={() => setStep((prev) => clampStep(prev - 1))}
               >
                 Voltar
               </Button>
@@ -855,7 +876,7 @@ export default function PlanningPage() {
                 disabled={!canGoNext && status === "COMPLETED"}
                 onClick={
                   step < STEPS.length - 1
-                    ? () => setStep((prev) => prev + 1)
+                    ? () => setStep((prev) => clampStep(prev + 1))
                     : () => onCreateSnapshot()
                 }
               >

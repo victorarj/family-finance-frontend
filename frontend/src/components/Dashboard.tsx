@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { list as listBankAccounts } from "../apis/bankAccounts";
 import { getOverview } from "../apis/dashboard";
 import { useTransactionModal } from "../context/TransactionModalContext";
 import type { BankAccount, DashboardOverview } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
+import { STORAGE_KEYS } from "../utils/storage";
 import Button from "./Button";
 import Card from "./Card";
 import Container from "./Container";
@@ -18,8 +21,6 @@ import {
   PlusIcon,
 } from "./Icons";
 import { formatCurrency, getMonthStatusLabel } from "../utils/formatters";
-
-const ONBOARDING_DISMISSED_KEY = "onboarding_dismissed";
 
 function monthNow() {
   return new Date().toISOString().slice(0, 7);
@@ -43,7 +44,7 @@ type ChecklistItemProps = {
 
 function readDismissedState() {
   if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(ONBOARDING_DISMISSED_KEY) === "true";
+  return window.localStorage.getItem(STORAGE_KEYS.onboardingDismissed) === "true";
 }
 
 function MetricCard({
@@ -203,32 +204,55 @@ export default function Dashboard() {
     readDismissedState,
   );
   const [planFabPulseStopped, setPlanFabPulseStopped] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const fetchDashboardData = useCallback(async (signal?: AbortSignal) => {
+    try {
+      setLoading(true);
+      const [overviewResponse, accountsResponse] = await Promise.all([
+        getOverview(month, { signal }),
+        listBankAccounts({ signal }),
+      ]);
+      setOverview(overviewResponse.data);
+      setAccounts(Array.isArray(accountsResponse.data) ? accountsResponse.data : []);
+      setError(null);
+    } catch (err) {
+      if (axios.isCancel(err)) {
+        return;
+      }
+      setError(getApiErrorMessage(err, "Não foi possível carregar o dashboard."));
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, [month]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const [overviewResponse, accountsResponse] = await Promise.all([
-          getOverview(month),
-          listBankAccounts(),
-        ]);
-        setOverview(overviewResponse.data);
-        setAccounts(Array.isArray(accountsResponse.data) ? accountsResponse.data : []);
-        setError(null);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Falha ao carregar dados",
-        );
-      } finally {
-        setLoading(false);
+    const controller = new AbortController();
+    void fetchDashboardData(controller.signal);
+    return () => controller.abort();
+  }, [fetchDashboardData, month, incomeRefreshToken, expenseRefreshToken, refreshKey]);
+
+  useEffect(() => {
+    const triggerRefresh = () => setRefreshKey((current) => current + 1);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        triggerRefresh();
       }
     };
 
-    fetchDashboardData();
-  }, [month, incomeRefreshToken, expenseRefreshToken]);
+    window.addEventListener("focus", triggerRefresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", triggerRefresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   const dismissOnboarding = () => {
-    window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, "true");
+    window.localStorage.setItem(STORAGE_KEYS.onboardingDismissed, "true");
     setOnboardingDismissed(true);
     setPlanFabPulseStopped(true);
   };
@@ -268,7 +292,7 @@ export default function Dashboard() {
     if (!showCompletionState) return undefined;
 
     const timeoutId = window.setTimeout(() => {
-      window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, "true");
+      window.localStorage.setItem(STORAGE_KEYS.onboardingDismissed, "true");
       setOnboardingDismissed(true);
       setPlanFabPulseStopped(true);
     }, 5000);

@@ -21,6 +21,8 @@ function SettingsCard({ to, title, subtitle, icon }: SettingsCardProps) {
   return (
     <Link
       to={to}
+      replace
+      state={{ fromSettingsHub: true }}
       className="group block rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">

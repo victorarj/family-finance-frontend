@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/Button";
@@ -9,6 +10,7 @@ import { ChevronLeftIcon, RetryIcon, TagIcon } from "../../components/Icons";
 import Input from "../../components/Input";
 import LoadingState from "../../components/LoadingState";
 import TransactionSheet from "../../components/TransactionSheet";
+import { getApiErrorMessage } from "../../utils/apiError";
 import {
   createCategory,
   deactivateCategory,
@@ -30,6 +32,7 @@ export default function CategoriasPage() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
+  const isMountedRef = useRef(true);
 
   const activeCategories = useMemo(
     () => categories.filter((category) => category.ativo),
@@ -40,21 +43,35 @@ export default function CategoriasPage() {
     [categories],
   );
 
-  const loadCategories = async () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadCategories = async (signal?: AbortSignal) => {
     setLoading(true);
     setLoadError(false);
     try {
-      const response = await listCategories(true);
+      const response = await listCategories(true, { signal });
+      if (signal?.aborted || !isMountedRef.current) return;
       setCategories(Array.isArray(response.data) ? response.data : []);
     } catch {
+      if (signal?.aborted) return;
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted && isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadCategories();
+    const controller = new AbortController();
+    void loadCategories(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const closeSheet = () => {
@@ -90,7 +107,11 @@ export default function CategoriasPage() {
     setSaveError(null);
     try {
       if (editing) {
+        if (!editing.id) {
+          throw new Error("Categoria inválida para edição.");
+        }
         const response = await updateCategory(editing.id, { nome: trimmedName });
+        if (!isMountedRef.current) return;
         setCategories((current) =>
           current.map((category) =>
             category.id === editing.id ? response.data : category,
@@ -98,21 +119,27 @@ export default function CategoriasPage() {
         );
       } else {
         const response = await createCategory({ nome: trimmedName });
+        if (!isMountedRef.current) return;
         setCategories((current) =>
-          [...current, response.data].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+          [...current, { ...response.data, ativo: response.data.ativo ?? true }].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
         );
       }
       closeSheet();
-    } catch {
-      setSaveError(SAVE_ERROR_MESSAGE);
+    } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) return;
+      setSaveError(getApiErrorMessage(error, SAVE_ERROR_MESSAGE));
     } finally {
-      setSaving(false);
+      if (isMountedRef.current) setSaving(false);
     }
   };
 
   const handleDeactivate = async (category: Category) => {
     const confirmed = window.confirm("Deseja desativar esta categoria?");
     if (!confirmed) return;
+    if (!category.id) {
+      setSaveError(DEACTIVATE_ERROR_MESSAGE);
+      return;
+    }
 
     setLoadError(false);
     setSaveError(null);
@@ -125,12 +152,14 @@ export default function CategoriasPage() {
 
     try {
       const response = await deactivateCategory(category.id);
+      if (!isMountedRef.current) return;
       setCategories((current) =>
         current.map((item) => (item.id === category.id ? response.data : item)),
       );
-    } catch {
+    } catch (error) {
+      if (!isMountedRef.current || axios.isCancel(error)) return;
       setCategories(previousCategories);
-      setSaveError(DEACTIVATE_ERROR_MESSAGE);
+      setSaveError(getApiErrorMessage(error, DEACTIVATE_ERROR_MESSAGE));
     }
   };
 

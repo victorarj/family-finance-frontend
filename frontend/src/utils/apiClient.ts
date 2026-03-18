@@ -1,4 +1,6 @@
 import axios from "axios";
+import { clearClientSession } from "./session";
+import { STORAGE_KEYS } from "./storage";
 
 export const AUTH_EXPIRED_EVENT = "auth:session-expired";
 
@@ -16,10 +18,16 @@ const client = axios.create({
 
 // request interceptor to add Authorization header if token present
 client.interceptors.request.use((config) => {
-  if (config.headers && ["post", "put", "patch"].includes(config.method?.toLowerCase() || "")) {
+  const method = config.method?.toLowerCase() || "";
+  const isMutationRequest = ["post", "put", "patch"].includes(method);
+  const isFormDataPayload =
+    typeof FormData !== "undefined" && config.data instanceof FormData;
+  const currentContentType = config.headers?.["Content-Type"] || config.headers?.["content-type"];
+
+  if (config.headers && isMutationRequest && !isFormDataPayload && !currentContentType) {
     config.headers["Content-Type"] = "application/json; charset=utf-8";
   }
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem(STORAGE_KEYS.token);
   if (token && config.headers) {
     config.headers["Authorization"] = `Bearer ${token}`;
   }
@@ -35,10 +43,8 @@ client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      const hadToken = Boolean(localStorage.getItem("token"));
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("userEmail");
+      const hadToken = Boolean(localStorage.getItem(STORAGE_KEYS.token));
+      clearClientSession();
       if (hadToken) {
         window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
       }

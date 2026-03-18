@@ -1,7 +1,8 @@
 import client from "../utils/apiClient";
 import type { Priority } from "../types";
 
-export const list = () => client.get<Priority[]>("/priorities/");
+export const list = (options?: { signal?: AbortSignal }) =>
+  client.get<Priority[]>("/priorities/", { signal: options?.signal });
 export const create = (data: Priority) =>
   client.post<Priority>("/priorities/", data);
 export const update = (id: number, data: Priority) =>

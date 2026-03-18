@@ -1,8 +1,9 @@
 import client from "../utils/apiClient";
 import type { BankAccount, BankAccountInput } from "../types";
 
-export const list = (options?: { activeOnly?: boolean }) =>
+export const list = (options?: { activeOnly?: boolean; signal?: AbortSignal }) =>
   client.get<BankAccount[]>("/bank-accounts/", {
+    signal: options?.signal,
     params: options?.activeOnly ? { active_only: true } : undefined,
   });
 export const create = (data: BankAccountInput) =>

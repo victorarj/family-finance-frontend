@@ -91,6 +91,23 @@ Notes:
 - SPA routes are supported via `try_files ... /index.html`.
 - Requests to `/api/*` are proxied to `http://host.docker.internal:3000/*` from inside the container.
 
+## Docker Dev Workflow
+
+For day-to-day development, use the Compose stack instead of the production Nginx image:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+This starts Vite with hot reload on `http://localhost:5173`.
+
+Notes:
+- The container reads [`/.env`](/c:/Users/msvic/Documents/finances-frontend/.env) for local defaults.
+- `VITE_API_BASE_URL` should stay as `/api` in development so Vite can proxy requests and rewrite `/api/public/*` to `/public/*` while still preserving `/api/v1/*` endpoints for documents and IA.
+- `VITE_PROXY_TARGET` controls where the Vite dev server forwards `/api/*`; in the Docker workflow it should point to `http://host.docker.internal:3000`.
+- Logs stay attached to the terminal running `docker compose up`.
+
 ## Render Frontend API Configuration
 
 If you deploy this frontend as a Render Static Site, configure this environment variable:

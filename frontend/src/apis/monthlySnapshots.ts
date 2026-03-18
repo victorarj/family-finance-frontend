@@ -1,8 +1,9 @@
 import client from "../utils/apiClient";
 import type { SnapshotDetails, SnapshotMensal } from "../types";
 
-export const list = (mes?: string) =>
+export const list = (mes?: string, options?: { signal?: AbortSignal }) =>
   client.get<SnapshotMensal[]>("/monthly-snapshots/", {
+    signal: options?.signal,
     params: mes ? { mes } : undefined,
   });
 export const create = (
@@ -14,5 +15,7 @@ export const create = (
   client.post<SnapshotMensal>("/monthly-snapshots/", data);
 export const remove = (id: number) =>
   client.delete<{ deleted: SnapshotMensal }>(`/monthly-snapshots/${id}`);
-export const getDetails = (id: number) =>
-  client.get<SnapshotDetails>(`/monthly-snapshots/${id}/details`);
+export const getDetails = (id: number, options?: { signal?: AbortSignal }) =>
+  client.get<SnapshotDetails>(`/monthly-snapshots/${id}/details`, {
+    signal: options?.signal,
+  });

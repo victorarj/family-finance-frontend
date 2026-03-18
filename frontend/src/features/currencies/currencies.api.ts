@@ -7,7 +7,8 @@ import type {
 
 const normalizeCode = (value: string) => value.trim().toUpperCase();
 
-export const listCurrencies = () => client.get<Currency[]>("/currencies");
+export const listCurrencies = (options?: { signal?: AbortSignal }) =>
+  client.get<Currency[]>("/currencies", { signal: options?.signal });
 
 export const createCurrency = (payload: CreateCurrencyPayload) =>
   client.post<Currency>("/currencies", {

@@ -1,6 +1,6 @@
-export interface Currency {
-  codigo: string;
-}
+import type { Currency as SharedCurrency } from "../../types";
+
+export type Currency = SharedCurrency;
 
 export interface CreateCurrencyPayload {
   codigo: string;

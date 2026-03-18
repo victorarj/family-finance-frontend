@@ -1,6 +1,8 @@
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { create, update } from "../apis/income";
 import type { Income } from "../types";
+import { getApiErrorMessage } from "../utils/apiError";
 import Button from "./Button";
 import FormField from "./FormField";
 import Input from "./Input";
@@ -49,11 +51,20 @@ export default function IncomeForm({
   onCancel,
 }: IncomeFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const isMountedRef = useRef(true);
   const [form, setForm] = useState<Income>(initialIncome(currentUserEmail));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitShake, setSubmitShake] = useState(false);
   const submitDisabled = loading || form.valor <= 0 || !form.nome.trim();
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     setForm(income ? normalizeIncome(income) : initialIncome(currentUserEmail));
@@ -71,14 +82,18 @@ export default function IncomeForm({
       };
       const action = income ? update(income.id || 0, payload) : create(payload);
       const res = await action;
+      if (!isMountedRef.current) return;
       onSaved(res.data);
       if (!income) {
         setForm(initialIncome(currentUserEmail));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar receita");
+      if (!isMountedRef.current || axios.isCancel(err)) return;
+      setError(getApiErrorMessage(err, "Não foi possível salvar a receita."));
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
