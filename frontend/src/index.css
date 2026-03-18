@@ -121,6 +121,10 @@
   .shake-x {
     animation: shake-x 220ms ease-in-out;
   }
+
+  .fab-pulse-green {
+    animation: fab-pulse-green 2s ease-in-out infinite;
+  }
 }
 
 @keyframes shake-x {
@@ -135,5 +139,16 @@
   }
   75% {
     transform: translateX(-2px);
+  }
+}
+
+
+@keyframes fab-pulse-green {
+  0%,
+  100% {
+    box-shadow: var(--shadow-fab);
+  }
+  50% {
+    box-shadow: 0 0 0 10px hsl(var(--primary) / 0.12), var(--shadow-fab);
   }
 }
