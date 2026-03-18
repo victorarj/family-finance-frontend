@@ -7,6 +7,7 @@ import { buildFinancialEngineMock } from "../mocks/financialEngineMock";
 import { server } from "../mocks/server";
 import { goToPlanningStep } from "../utils/planning";
 import { renderWithProviders } from "../utils/renderWithProviders";
+import { mockViewport } from "../utils/mockViewport";
 
 describe("snapshots - creation", () => {
   it("stores expected totals when creating snapshot", async () => {
@@ -16,6 +17,8 @@ describe("snapshots - creation", () => {
       expenses: [baseExpense({ valor_total: 1000, valor_mensal: 1000, data_inicio: `${CANONICAL_MONTH}-02` })],
     });
     server.use(...engine.handlers);
+
+    mockViewport(1280);
 
     renderWithProviders(<PlanningPage />);
     await goToPlanningStep(5);
@@ -28,5 +31,10 @@ describe("snapshots - creation", () => {
       expect(snapshot?.total_fixas).toBe(0);
       expect(snapshot?.saldo_projetado).toBe(2000);
     });
+
+    expect(await screen.findByText(/Planejado! 🎉/i)).toBeInTheDocument();
+    expect(screen.getByText("Você prevê sobrar R$ 2.000,00 este mês.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver Snapshots" })).toBeInTheDocument();
   });
 });

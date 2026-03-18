@@ -51,7 +51,7 @@ describe("PlanningPage responsive layout", () => {
     );
 
     await waitFor(() => expect(screen.getByText("Planejamento mensal")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /1\. Mês/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1\. Qual mês\?/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Voltar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Próximo" })).toBeInTheDocument();
   });
@@ -66,7 +66,7 @@ describe("PlanningPage responsive layout", () => {
     );
 
     await waitFor(() => expect(screen.getByText("Planejamento mensal")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /5\. Confirmar/i })).toBeInTheDocument();
-    expect(screen.getByText(/Etapa 1 de 5/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /5\. Tudo certo\?/i })).toBeInTheDocument();
+    expect(screen.getByText(/^Qual mês\?$/i)).toBeInTheDocument();
   });
 });
