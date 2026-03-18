@@ -451,6 +451,7 @@ function AppContent() {
             <ExpenseForm
               expense={currentExpense}
               currentUserEmail={auth.userEmail || ""}
+              currentUserId={auth.userId}
               onSaved={handleExpenseSaved}
               onCancel={closeSheet}
             />

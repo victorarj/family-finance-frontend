@@ -1,22 +1,22 @@
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { list as listBankAccounts } from "../apis/bankAccounts";
 import { getOverview } from "../apis/dashboard";
+import { useAuth } from "../auth/AuthContext";
 import { useTransactionModal } from "../context/TransactionModalContext";
-import type { BankAccount, DashboardOverview } from "../types";
+import type { DashboardOverview } from "../types";
 import { getApiErrorMessage } from "../utils/apiError";
-import { STORAGE_KEYS } from "../utils/storage";
-import Button from "./Button";
+import {
+  STORAGE_KEYS,
+  getUserScopedStorageItem,
+} from "../utils/storage";
 import Card from "./Card";
 import Container from "./Container";
 import Fab from "./Fab";
 import LoadingState from "./LoadingState";
 import MonthNavigator from "./MonthNavigator";
 import {
-  BankCardIcon,
   CalendarIcon,
-  CheckIcon,
   PlanningIcon,
   PlusIcon,
 } from "./Icons";
@@ -33,20 +33,12 @@ type MetricCardProps = {
   className?: string;
 };
 
-type ChecklistItemProps = {
+type ProgressChipProps = {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   label: string;
-  sublabel: string;
-  completed: boolean;
-  ctaLabel?: string;
-  onCtaClick?: () => void;
-  ctaClassName?: string;
+  onClick: () => void;
+  className?: string;
 };
-
-function readDismissedState() {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(STORAGE_KEYS.onboardingDismissed) === "true";
-}
 
 function MetricCard({
   title,
@@ -68,45 +60,21 @@ function MetricCard({
   );
 }
 
-function ChecklistItem({
+function ProgressChip({
   icon: Icon,
   label,
-  sublabel,
-  completed,
-  ctaLabel,
-  onCtaClick,
-  ctaClassName,
-}: ChecklistItemProps) {
+  onClick,
+  className,
+}: ProgressChipProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-surface px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-start gap-3">
-        <div
-          className={`mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${completed ? "bg-income-soft text-income" : "bg-background text-primary"}`}
-        >
-          {completed ? <CheckIcon className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-        </div>
-        <div className="space-y-1">
-          <p
-            className={`text-sm font-medium ${completed ? "text-muted-foreground line-through" : "text-foreground"}`}
-          >
-            {label}
-          </p>
-          <p className="text-sm text-muted-foreground">{sublabel}</p>
-        </div>
-      </div>
-
-      {!completed && ctaLabel && onCtaClick ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className={`w-full justify-center sm:w-auto ${ctaClassName || ""}`.trim()}
-          onClick={onCtaClick}
-        >
-          {ctaLabel}
-        </Button>
-      ) : null}
-    </div>
+    <button
+      type="button"
+      className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted ${className || ""}`.trim()}
+      onClick={onClick}
+    >
+      <Icon className="h-4 w-4 text-primary" />
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -194,29 +162,22 @@ function statusBadgeClasses(status: DashboardOverview["month_status"]) {
 }
 
 export default function Dashboard() {
+  const auth = useAuth();
   const navigate = useNavigate();
   const { openAddExpense, incomeRefreshToken, expenseRefreshToken } =
     useTransactionModal();
   const [month, setMonth] = useState(monthNow());
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(
-    readDismissedState,
-  );
   const [planFabPulseStopped, setPlanFabPulseStopped] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchDashboardData = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true);
-      const [overviewResponse, accountsResponse] = await Promise.all([
-        getOverview(month, { signal }),
-        listBankAccounts({ signal }),
-      ]);
+      const overviewResponse = await getOverview(month, { signal });
       setOverview(overviewResponse.data);
-      setAccounts(Array.isArray(accountsResponse.data) ? accountsResponse.data : []);
       setError(null);
     } catch (err) {
       if (axios.isCancel(err)) {
@@ -253,56 +214,61 @@ export default function Dashboard() {
     };
   }, []);
 
-  const dismissOnboarding = () => {
-    window.localStorage.setItem(STORAGE_KEYS.onboardingDismissed, "true");
-    setOnboardingDismissed(true);
-    setPlanFabPulseStopped(true);
-  };
-
   const showPlanningPulse = useMemo(() => {
     if (!overview) return false;
     return (
-      !onboardingDismissed &&
       !planFabPulseStopped &&
       overview.month_status === "NOT_STARTED"
     );
-  }, [overview, onboardingDismissed, planFabPulseStopped]);
-
-  const activeAccounts = useMemo(
-    () => accounts.filter((account) => account.ativo),
-    [accounts],
-  );
+  }, [overview, planFabPulseStopped]);
 
   const hasTransactions = Boolean(
     overview && (overview.income_mtd > 0 || overview.expenses_mtd > 0),
   );
   const hasPlanningStarted = overview?.month_status !== "NOT_STARTED";
-  const hasActiveAccount = activeAccounts.length > 0;
-  const isEmptyState = Boolean(
-    overview &&
-      overview.income_mtd === 0 &&
-      overview.expenses_mtd === 0 &&
-      overview.month_status === "NOT_STARTED" &&
-      !onboardingDismissed,
+  const onboardingCompleted = Boolean(
+    auth.currentUser?.onboarding_completed_at ||
+      getUserScopedStorageItem(STORAGE_KEYS.onboardingCompleted, auth.userId) === "true",
   );
-  const allChecklistItemsCompleted =
-    hasActiveAccount && hasTransactions && hasPlanningStarted;
-  const showCompletionState = !onboardingDismissed && allChecklistItemsCompleted;
-  const showOnboardingCard = isEmptyState || showCompletionState;
-  const showPlanningCtaPulse = showPlanningPulse && showOnboardingCard;
-  const showPlanningFabPulse = showPlanningPulse && !showOnboardingCard;
+  const pendingActions = useMemo<
+    Array<{
+      key: "transaction" | "planning";
+      icon: typeof PlusIcon | typeof CalendarIcon;
+      label: string;
+      onClick: () => void;
+    }>
+  >(() => {
+    const items: Array<{
+      key: "transaction" | "planning";
+      icon: typeof PlusIcon | typeof CalendarIcon;
+      label: string;
+      onClick: () => void;
+    }> = [];
 
-  useEffect(() => {
-    if (!showCompletionState) return undefined;
+    if (!hasTransactions) {
+      items.push({
+        key: "transaction",
+        icon: PlusIcon,
+        label: "Registrar sua primeira transação",
+        onClick: openAddExpense,
+      });
+    }
 
-    const timeoutId = window.setTimeout(() => {
-      window.localStorage.setItem(STORAGE_KEYS.onboardingDismissed, "true");
-      setOnboardingDismissed(true);
-      setPlanFabPulseStopped(true);
-    }, 5000);
+    if (!hasPlanningStarted) {
+      items.push({
+        key: "planning",
+        icon: CalendarIcon,
+        label: "Planejar o mês atual",
+        onClick: () => navigate("/planning"),
+      });
+    }
 
-    return () => window.clearTimeout(timeoutId);
-  }, [showCompletionState]);
+    return items;
+  }, [hasPlanningStarted, hasTransactions, navigate, openAddExpense]);
+  const showNextSteps = onboardingCompleted && pendingActions.length > 0;
+  const showPlanningChipPulse =
+    showPlanningPulse && showNextSteps && !hasPlanningStarted;
+  const showPlanningFabPulse = showPlanningPulse && !showNextSteps;
 
   if (loading) {
     return (
@@ -344,59 +310,28 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {showOnboardingCard ? (
-            <Card className="overflow-hidden border-l-4 border-l-primary">
-              <div className="flex flex-col gap-5">
-                <div className="space-y-2">
-                  <h3 className="text-2xl">Bem-vindo ao Finanças da Casa 👋</h3>
-                  <p className="text-sm text-muted-foreground sm:text-base">
-                    Siga os passos abaixo para começar a controlar suas finanças.
-                  </p>
-                </div>
-
-                {showCompletionState ? (
-                  <p className="rounded-xl bg-surface px-4 py-4 text-sm text-foreground sm:text-base">
-                    Tudo pronto! Você já pode aproveitar todos os recursos do app.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    <ChecklistItem
-                      icon={BankCardIcon}
-                      label="Criar uma conta bancária"
-                      sublabel="Necessário para registrar despesas"
-                      completed={hasActiveAccount}
-                      ctaLabel="Criar conta"
-                      onCtaClick={() => navigate("/configuracoes/contas-bancarias")}
-                    />
-                    <ChecklistItem
-                      icon={PlusIcon}
-                      label="Registrar sua primeira despesa ou receita"
-                      sublabel="Acompanhe seus gastos e entradas do dia a dia"
-                      completed={hasTransactions}
-                      ctaLabel="Adicionar transação"
-                      onCtaClick={openAddExpense}
-                    />
-                    <ChecklistItem
-                      icon={CalendarIcon}
-                      label="Planejar o mês atual"
-                      sublabel="Defina orçamentos e despesas fixas antes de gastar"
-                      completed={hasPlanningStarted}
-                      ctaLabel="Planejar agora"
-                      ctaClassName={showPlanningCtaPulse ? "fab-pulse-green border-primary" : undefined}
-                      onCtaClick={() => navigate("/planejamento")}
-                    />
-                  </div>
-                )}
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-                    onClick={dismissOnboarding}
-                  >
-                    Dispensar
-                  </button>
-                </div>
+          {showNextSteps ? (
+            <Card className="space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-lg text-foreground">Próximos passos</h3>
+                <p className="text-sm text-muted-foreground">
+                  Continue de onde parou com atalhos rápidos.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {pendingActions.map((item) => (
+                  <ProgressChip
+                    key={item.key}
+                    icon={item.icon}
+                    label={item.label}
+                    onClick={item.onClick}
+                    className={
+                      item.key === "planning" && showPlanningChipPulse
+                        ? "fab-pulse-green border-primary"
+                        : undefined
+                    }
+                  />
+                ))}
               </div>
             </Card>
           ) : null}

@@ -9,7 +9,11 @@ import type { BankAccount, Category, Expense, Priority } from "../types";
 import { getApiErrorMessage } from "../utils/apiError";
 import { formatDate, formatCurrencyInput, parseCurrencyInput } from "../utils/formatters";
 import { normalizeDisplayText } from "../utils/text";
-import { STORAGE_KEYS } from "../utils/storage";
+import {
+  STORAGE_KEYS,
+  getUserScopedStorageItem,
+  setUserScopedStorageItem,
+} from "../utils/storage";
 import Button from "./Button";
 import FormField from "./FormField";
 import { ChevronDownIcon, ChevronRightIcon } from "./Icons";
@@ -20,8 +24,11 @@ import TextArea from "./TextArea";
 interface ExpenseFormProps {
   expense?: Expense | null;
   currentUserEmail: string;
+  currentUserId?: number | null;
   onSaved: (expense: Expense) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  layout?: "sheet" | "inline";
+  submitLabel?: string;
 }
 
 function dateToday() {
@@ -74,9 +81,9 @@ function findDefaultIdByName<T extends { id?: number; nome?: string; nome_conta?
   return Number(matched?.id || items[0].id || 0);
 }
 
-function readStoredId(key: string): number {
+function readStoredId(key: string, userId?: number | null): number {
   if (typeof window === "undefined") return 0;
-  const value = window.localStorage.getItem(key);
+  const value = getUserScopedStorageItem(key, userId ?? null);
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
@@ -85,7 +92,15 @@ function buildExpenseName(categoryName: string, date: string) {
   return `${categoryName} · ${formatDate(date || dateToday())}`;
 }
 
-export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCancel }: ExpenseFormProps) {
+export default function ExpenseForm({
+  expense,
+  currentUserEmail,
+  currentUserId,
+  onSaved,
+  onCancel,
+  layout = "sheet",
+  submitLabel,
+}: ExpenseFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const isMountedRef = useRef(true);
   const [form, setForm] = useState<Expense>(initialExpense(currentUserEmail));
@@ -152,8 +167,8 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
     if (expense) return;
     if (!categories.length && !priorities.length && !selectableAccounts.length) return;
 
-    const storedCategoryId = readStoredId(STORAGE_KEYS.expenseLastCategory);
-    const storedAccountId = readStoredId(STORAGE_KEYS.expenseLastAccount);
+    const storedCategoryId = readStoredId(STORAGE_KEYS.expenseLastCategory, currentUserId);
+    const storedAccountId = readStoredId(STORAGE_KEYS.expenseLastAccount, currentUserId);
     const fallbackPriorityId = findDefaultIdByName(priorities, ["baixa", "low"]);
     const fallbackAccountId = selectableAccounts[0]?.id || 0;
     const fallbackCategoryId = categories[0]?.id || 0;
@@ -184,7 +199,7 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
 
       return updated;
     });
-  }, [categories, priorities, selectableAccounts, expense]);
+  }, [categories, priorities, selectableAccounts, expense, currentUserId]);
 
   useEffect(() => {
     setForm(expense ? normalizeExpense(expense) : initialExpense(currentUserEmail));
@@ -222,8 +237,16 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
       if (!isMountedRef.current) return;
 
       if (!expense && typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEYS.expenseLastCategory, String(payload.categoria_id));
-        window.localStorage.setItem(STORAGE_KEYS.expenseLastAccount, String(payload.conta_bancaria_id));
+        setUserScopedStorageItem(
+          STORAGE_KEYS.expenseLastCategory,
+          currentUserId ?? null,
+          String(payload.categoria_id),
+        );
+        setUserScopedStorageItem(
+          STORAGE_KEYS.expenseLastAccount,
+          currentUserId ?? null,
+          String(payload.conta_bancaria_id),
+        );
       }
 
       onSaved(res.data);
@@ -473,7 +496,9 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
         </div>
       )}
 
-      <div className={`sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 ${submitShake ? "shake-x" : ""}`}>
+      <div
+        className={`flex flex-wrap items-center gap-2 ${layout === "sheet" ? "sticky bottom-0 -mx-4 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3" : "pt-2"} ${submitShake ? "shake-x" : ""}`.trim()}
+      >
         <div
           onAnimationEnd={() => setSubmitShake(false)}
           onClick={() => {
@@ -492,12 +517,14 @@ export default function ExpenseForm({ expense, currentUserEmail, onSaved, onCanc
               formRef.current?.requestSubmit();
             }}
           >
-            {loading ? "Salvando..." : expense ? "Atualizar" : "Adicionar"}
+            {loading ? "Salvando..." : submitLabel || (expense ? "Atualizar" : "Adicionar")}
           </Button>
         </div>
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
-          Cancelar
-        </Button>
+        {onCancel ? (
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+            Cancelar
+          </Button>
+        ) : null}
       </div>
     </form>
   );

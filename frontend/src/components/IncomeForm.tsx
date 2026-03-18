@@ -13,7 +13,9 @@ interface IncomeFormProps {
   income?: Income | null;
   currentUserEmail: string;
   onSaved: (income: Income) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  layout?: "sheet" | "inline";
+  submitLabel?: string;
 }
 
 function dateToday() {
@@ -49,6 +51,8 @@ export default function IncomeForm({
   currentUserEmail,
   onSaved,
   onCancel,
+  layout = "sheet",
+  submitLabel,
 }: IncomeFormProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const isMountedRef = useRef(true);
@@ -171,7 +175,9 @@ export default function IncomeForm({
         />
       </FormField>
 
-      <div className={`sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3 ${submitShake ? "shake-x" : ""}`}>
+      <div
+        className={`flex flex-wrap items-center gap-2 ${layout === "sheet" ? "sticky bottom-0 -mx-4 border-t border-border bg-surface-elevated px-4 pb-[calc(env(safe-area-inset-bottom)+0.25rem)] pt-3" : "pt-2"} ${submitShake ? "shake-x" : ""}`.trim()}
+      >
         <div
           onAnimationEnd={() => setSubmitShake(false)}
           onClick={() => {
@@ -190,17 +196,19 @@ export default function IncomeForm({
               formRef.current?.requestSubmit();
             }}
           >
-            {loading ? "Salvando..." : income ? "Atualizar" : "Adicionar"}
+            {loading ? "Salvando..." : submitLabel || (income ? "Atualizar" : "Adicionar")}
           </Button>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          Cancelar
-        </Button>
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+        ) : null}
       </div>
     </form>
   );
