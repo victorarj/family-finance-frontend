@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { list as listCategories } from "../apis/categories";
 import {
@@ -53,12 +53,42 @@ function toNumber(value: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
+type CompletionState = {
+  month: string;
+  projectedBalance: number;
+};
+
 const STEPS = [
-  { label: "Mês", icon: <CalendarIcon className="h-5 w-5" /> },
-  { label: "Recorrentes", icon: <RetryIcon className="h-5 w-5" /> },
-  { label: "Orçamentos", icon: <TagIcon className="h-5 w-5" /> },
-  { label: "Projeção", icon: <TrendingUpIcon className="h-5 w-5" /> },
-  { label: "Confirmar", icon: <CheckIcon className="h-5 w-5" /> },
+  {
+    shortLabel: "Qual mês?",
+    title: "Qual mês você quer planejar?",
+    subtitle: "Escolha o mês de referência. Você pode voltar e ajustar depois.",
+    icon: <CalendarIcon className="h-5 w-5" />,
+  },
+  {
+    shortLabel: "Quais são suas contas fixas?",
+    title: "Quais são suas despesas fixas?",
+    subtitle: "Adicione contas fixas como aluguel, assinaturas e financiamentos.",
+    icon: <RetryIcon className="h-5 w-5" />,
+  },
+  {
+    shortLabel: "Quanto quer gastar?",
+    title: "Quanto quer gastar por categoria?",
+    subtitle: "Defina um teto para cada categoria de gasto variável.",
+    icon: <TagIcon className="h-5 w-5" />,
+  },
+  {
+    shortLabel: "Como ficará o mês?",
+    title: "Como ficará seu mês?",
+    subtitle: "Veja como seu mês vai ficar antes de confirmar o plano.",
+    icon: <TrendingUpIcon className="h-5 w-5" />,
+  },
+  {
+    shortLabel: "Tudo certo?",
+    title: "Tudo pronto para confirmar?",
+    subtitle: "Revise tudo e salve o planejamento. Você pode editar até fechar o mês.",
+    icon: <CheckIcon className="h-5 w-5" />,
+  },
 ];
 
 function emptyRecurringForm(): TransacaoRecorrente {
@@ -81,6 +111,12 @@ function getStatusBadgeClasses(status: MonthStatus) {
   }
 }
 
+function formatMonthName(month: string) {
+  const [year, rawMonth] = month.split("-");
+  const date = new Date(Number(year), Number(rawMonth) - 1, 1);
+  return new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(date).replace(/^./, (char) => char.toUpperCase());
+}
+
 export default function PlanningPage() {
   const navigate = useNavigate();
   const [mes, setMes] = useState(monthNow());
@@ -99,6 +135,7 @@ export default function PlanningPage() {
   const [editingRecurringId, setEditingRecurringId] = useState<number | null>(
     null,
   );
+  const [completionState, setCompletionState] = useState<CompletionState | null>(null);
 
   const [budgetForm, setBudgetForm] = useState<BudgetMensal>({
     mes,
@@ -125,7 +162,20 @@ export default function PlanningPage() {
       : "text-expense";
   }, [projection]);
 
-  const reload = async () => {
+  const completionTone = useMemo(() => {
+    if (!completionState) return "text-muted-foreground";
+    return completionState.projectedBalance >= 0 ? "text-income" : "text-warning";
+  }, [completionState]);
+
+  const completionMessage = useMemo(() => {
+    if (!completionState) return null;
+    const formattedBalance = formatCurrency(Math.abs(completionState.projectedBalance));
+    return completionState.projectedBalance >= 0
+      ? `Você prevê sobrar ${formattedBalance} este mês.`
+      : `Atenção: seu plano prevê um déficit de ${formattedBalance}.`;
+  }, [completionState]);
+
+  const reload = useCallback(async () => {
     try {
       setError(null);
       const [
@@ -161,12 +211,13 @@ export default function PlanningPage() {
         err instanceof Error ? err.message : "Falha ao carregar planejamento",
       );
     }
-  };
+  }, [mes]);
 
   useEffect(() => {
     setBudgetForm((prev) => ({ ...prev, mes }));
+    setCompletionState(null);
     void reload();
-  }, [mes]);
+  }, [mes, reload]);
 
   const onCreateBudget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,7 +310,12 @@ export default function PlanningPage() {
     try {
       await createSnapshot({ mes, confirm_negative: confirmNegative });
       setConfirmSheetOpen(false);
-      navigate("/");
+      await reload();
+      setStep(STEPS.length - 1);
+      setCompletionState({
+        month: mes,
+        projectedBalance: projection ? toNumber(projection.projected_balance) : 0,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao criar snapshot");
     } finally {
@@ -337,6 +393,9 @@ export default function PlanningPage() {
                   ? "Siga o fluxo em etapas para estruturar seu mês antes de executar despesas e receitas."
                   : `Planejando ${formatMonthLabel(mes)}`}
               </p>
+              {status === "NOT_STARTED" && (
+                <p className="text-[10px] text-muted-foreground">⏱ Leva cerca de 5 minutos</p>
+              )}
             </div>
             <div
               className={`inline-flex w-fit shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${getStatusBadgeClasses(
@@ -348,15 +407,16 @@ export default function PlanningPage() {
           </div>
           <div className="space-y-2">
             <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
-              {STEPS.map(({ label, icon }, idx) => {
+              {STEPS.map(({ shortLabel, icon }, idx) => {
                 const active = idx === step;
-                const done = idx < step;
+                const done = idx < step || completionState !== null;
                 return (
                   <button
-                    key={label}
+                    key={shortLabel}
                     type="button"
+                    disabled={completionState !== null}
                     onClick={() => setStep(idx)}
-                    className={`min-w-[4rem] rounded-md px-3 py-2 text-xs md:min-w-0 ${
+                    className={`min-w-[9rem] rounded-md px-3 py-2 text-left text-xs md:min-w-0 ${
                       active
                         ? "bg-primary text-background"
                         : done
@@ -364,10 +424,9 @@ export default function PlanningPage() {
                           : "bg-surface text-muted-foreground"
                     }`}
                   >
-                    <div className="flex flex-col items-center gap-1 md:flex-row md:justify-center md:gap-2">
+                    <div className="flex items-center gap-2">
                       {icon}
-                      <span className="hidden md:inline">{label}</span>
-                      <span className="md:hidden">{active ? label : ""}</span>
+                      <span>{`${idx + 1}. ${shortLabel}`}</span>
                     </div>
                   </button>
                 );
@@ -388,414 +447,430 @@ export default function PlanningPage() {
           </p>
         )}
 
-        {step === 0 && (
-          <Card className="space-y-3">
-            <h3 className="text-lg">1. Selecione o mês</h3>
-            <p className="text-sm text-muted-foreground">
-              Defina o mês de referência para carregar status, projeção,
-              orçamentos e snapshots.
-            </p>
-            <div className="flex flex-col gap-2">
-              <MonthNavigator month={mes} onChange={setMes} />
+        {completionState ? (
+          <Card className="space-y-5 px-4 py-6 text-center sm:px-6 sm:py-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-income-soft text-income sm:h-20 sm:w-20">
+              <CheckIcon className="h-9 w-9 sm:h-11 sm:w-11" />
             </div>
-          </Card>
-        )}
-
-        {step === 1 && (
-          <Card className="space-y-3">
-            <h3 className="text-lg">2. Gerencie transacoes recorrentes</h3>
-            <p className="text-sm text-muted-foreground">
-              Entradas recorrentes funcionam como template mensal reutilizável e
-              editável a qualquer momento.
-            </p>
-            <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
-              onSubmit={editingRecurringId ? onUpdateRecurring : onCreateRecurring}
-            >
-              <Select
-                value={recurringForm.tipo}
-                onChange={(e) =>
-                  setRecurringForm((prev) => ({
-                    ...prev,
-                    tipo: e.target.value as TransacaoRecorrente["tipo"],
-                  }))
-                }
-                disabled={busy}
-              >
-                <option value="expense">Despesa</option>
-                <option value="income">Receita</option>
-              </Select>
-              <Input
-                type="text"
-                value={recurringForm.descricao}
-                onChange={(e) =>
-                  setRecurringForm((prev) => ({
-                    ...prev,
-                    descricao: e.target.value,
-                  }))
-                }
-                placeholder="Descrição"
-                required
-                disabled={busy}
-              />
-              <Input
-                type="number"
-                step="0.01"
-                value={recurringForm.valor}
-                onChange={(e) =>
-                  setRecurringForm((prev) => ({
-                    ...prev,
-                    valor: Number(e.target.value),
-                  }))
-                }
-                placeholder="Valor"
-                required
-                disabled={busy}
-              />
-              <Button type="submit" disabled={busy}>
-                {editingRecurringId ? "Salvar alterações" : "Salvar recorrente"}
-              </Button>
-            </form>
-            {editingRecurringId && (
-              <div className="flex flex-wrap">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={cancelRecurringEdit}
-                  disabled={busy}
-                >
-                  Cancelar edição
-                </Button>
-              </div>
-            )}
-
-            <div className="space-y-2 text-sm">
-              <h4 className="font-semibold">Recorrentes ativos</h4>
-              <ul className="space-y-2 text-foreground">
-                {activeRecurring.map((item) => (
-                  <li
-                    className="rounded-md bg-surface px-3 py-2"
-                    key={item.id}
-                  >
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <p className="min-w-0">
-                        {item.tipo} - {item.descricao}: {formatCurrency(item.valor)}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busy || !item.id}
-                          onClick={() => startRecurringEdit(item)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-expense hover:bg-expense-soft"
-                          disabled={busy || !item.id}
-                          onClick={() => void onDeleteRecurring(item)}
-                        >
-                          Excluir
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-                {activeRecurring.length === 0 && (
-                  <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
-                    Nenhuma transacao recorrente registrada.
-                  </li>
-                )}
-              </ul>
-            </div>
-          </Card>
-        )}
-
-        {step === 2 && (
-          <Card className="space-y-3">
-            <h3 className="text-lg">3. Defina orçamentos por categoria</h3>
-            <p className="text-sm text-muted-foreground">
-              Use esta etapa para estimar gastos que não fazem parte das contas
-              recorrentes (ex.: supermercado, restaurantes, compras).
-            </p>
-            <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
-              onSubmit={onCreateBudget}
-            >
-              <Select
-                value={budgetForm.categoria_id}
-                onChange={(e) =>
-                  setBudgetForm((prev) => ({
-                    ...prev,
-                    categoria_id: Number(e.target.value),
-                  }))
-                }
-                required
-              >
-                <option value={0}>Categoria</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id || 0}>
-                    {category.nome}
-                  </option>
-                ))}
-              </Select>
-              <Input
-                type="number"
-                step="0.01"
-                value={budgetForm.valor_planejado}
-                onChange={(e) =>
-                  setBudgetForm((prev) => ({
-                    ...prev,
-                    valor_planejado: Number(e.target.value),
-                  }))
-                }
-                placeholder="Valor planejado"
-                required
-              />
-              <Button type="submit" disabled={busy}>
-                Salvar orçamento
-              </Button>
-            </form>
-
-            <ul className="space-y-2 text-sm text-foreground">
-              {budgets.map((budget) => (
-                <li
-                  className="space-y-2 rounded-md bg-surface px-3 py-3"
-                  key={budget.id || `${budget.mes}-${budget.categoria_id}`}
-                >
-                  <p className="text-muted-foreground">
-                    Categoria:{" "}
-                    {categories.find((c) => c.id === budget.categoria_id)?.nome ||
-                      `#${budget.categoria_id}`}
-                  </p>
-                  {editingBudgetId === budget.id ? (
-                    <div className="space-y-2">
-                      <FormField label="Valor planejado">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={editingBudgetValue}
-                          onChange={(e) => setEditingBudgetValue(e.target.value)}
-                          disabled={busy}
-                        />
-                      </FormField>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => void onUpdateBudget()}
-                        >
-                          Salvar
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={busy}
-                          onClick={cancelBudgetEdit}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-semibold text-foreground">
-                        {formatCurrency(budget.valor_planejado)}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={busy || !budget.id}
-                          onClick={() => startBudgetEdit(budget)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-expense hover:bg-expense-soft"
-                          disabled={busy || !budget.id}
-                          onClick={() => void onDeleteBudget(budget)}
-                        >
-                          Excluir
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </li>
-              ))}
-              {budgets.length === 0 && (
-                <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
-                  Nenhum orçamento cadastrado para este mês.
-                </li>
-              )}
-            </ul>
-          </Card>
-        )}
-
-        {step === 3 && (
-          <Card className="space-y-3">
-            <h3 className="text-lg">4. Revise a projeção</h3>
-            <p className="text-sm text-muted-foreground">
-              Projeção = receitas - despesas recorrentes - orçamentos variáveis.
-              Despesas já lançadas aparecem apenas como acompanhamento.
-            </p>
-            {projection ? (
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">Receita prevista</p>
-                    <p className="font-semibold text-income">
-                      {formatCurrency(projection.income)}
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">
-                      Despesas já lançadas (informativo)
-                    </p>
-                    <p className="font-semibold text-expense">
-                      {formatCurrency(projection.expenses_logged)}
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">Despesas fixas</p>
-                    <p className="font-semibold text-expense">
-                      {formatCurrency(projection.fixed_expenses)}
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-surface px-3 py-2">
-                    <p className="text-muted-foreground">Orcamentos variaveis</p>
-                    <p className="font-semibold text-warning">
-                      {formatCurrency(projection.planned_variable)}
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-surface px-3 py-2 md:col-span-2 xl:col-span-4">
-                    <p className="text-muted-foreground">Saldo projetado</p>
-                    <p className={`font-semibold ${projectionTone}`}>
-                      {formatCurrency(projection.projected_balance)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Sem projeção disponível.</p>
-            )}
-          </Card>
-        )}
-
-        {step === 4 && (
-          <Card className="space-y-3">
-            <h3 className="text-lg">5. Confirme o planejamento</h3>
-            <p className="text-sm text-muted-foreground">
-              Ao confirmar, um snapshot será criado para este mês e você será
-              direcionado ao dashboard para acompanhar a execução.
-            </p>
-            <div className="rounded-full bg-surface px-3 py-2 text-sm">
-              Status atual: <strong>{getMonthStatusLabel(status)}</strong>
-            </div>
-            <Button
-              onClick={onCreateSnapshot}
-              disabled={busy || status === "COMPLETED"}
-            >
-              <CheckIcon className="mr-2 h-5 w-5" />
-              Confirmar planejamento e criar snapshot
-            </Button>
-            <TransactionSheet
-              open={confirmSheetOpen}
-              onOpenChange={setConfirmSheetOpen}
-              title="Confirmar saldo não positivo"
-              description="Seu saldo projetado está negativo ou zerado. Confirme apenas se quiser concluir o planejamento."
-            >
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Este mês será fechado com saldo projetado não positivo.
-                  Confirme apenas se deseja realmente concluir o planejamento.
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={busy}
-                    onClick={() => void createSnapshotWithGuard(true)}
-                  >
-                    {busy ? "Confirmando..." : "Confirmar mesmo assim"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => setConfirmSheetOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </TransactionSheet>
-
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Snapshots do mês</h4>
-              <ul className="space-y-2 text-sm text-foreground">
-                {snapshots.map((snapshot) => (
-                  <li
-                    className="rounded-md bg-surface px-3 py-2"
-                    key={snapshot.id}
-                  >
-                    {formatMonthLabel(snapshot.mes)}: saldo projetado {formatCurrency(snapshot.saldo_projetado)}
-                  </li>
-                ))}
-                {snapshots.length === 0 && (
-                  <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
-                    Nenhum snapshot criado para este mês.
-                  </li>
-                )}
-              </ul>
+              <h3 className="text-2xl font-semibold sm:text-3xl">{`${formatMonthName(completionState.month)} planejado! 🎉`}</h3>
+              {completionMessage && (
+                <p className={`mx-auto max-w-xl text-sm sm:text-base ${completionTone}`}>
+                  {completionMessage}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button type="button" className="w-full sm:w-auto" onClick={() => navigate("/")}>
+                Ver Dashboard
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => navigate("/snapshots")}
+              >
+                Ver Snapshots
+              </Button>
             </div>
           </Card>
-        )}
-
-        <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto"
-            disabled={!canGoPrev}
-            onClick={() => setStep((prev) => prev - 1)}
-          >
-            Voltar
-          </Button>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {STEPS[step].label}
-          </p>
-          <Button
-            type="button"
-            className="w-full sm:w-auto"
-            disabled={!canGoNext && status === "COMPLETED"}
-            onClick={
-              step < STEPS.length - 1
-                ? () => setStep((prev) => prev + 1)
-                : () => onCreateSnapshot()
-            }
-          >
-            {step === STEPS.length - 1 ? (
-              <>
-                <CheckIcon className="mr-2 h-5 w-5" />
-                Confirmar
-              </>
-            ) : (
-              "Próximo"
+        ) : (
+          <>
+            {step === 0 && (
+              <Card className="space-y-3">
+                <h3 className="text-lg">{`1. ${STEPS[0].title}`}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[0].subtitle}</p>
+                <div className="flex flex-col gap-2">
+                  <MonthNavigator month={mes} onChange={setMes} />
+                </div>
+              </Card>
             )}
-          </Button>
-        </Card>
+
+            {step === 1 && (
+              <Card className="space-y-3">
+                <h3 className="text-lg">{`2. ${STEPS[1].title}`}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[1].subtitle}</p>
+                <form
+                  className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+                  onSubmit={editingRecurringId ? onUpdateRecurring : onCreateRecurring}
+                >
+                  <Select
+                    value={recurringForm.tipo}
+                    onChange={(e) =>
+                      setRecurringForm((prev) => ({
+                        ...prev,
+                        tipo: e.target.value as TransacaoRecorrente["tipo"],
+                      }))
+                    }
+                    disabled={busy}
+                  >
+                    <option value="expense">Despesa</option>
+                    <option value="income">Receita</option>
+                  </Select>
+                  <Input
+                    type="text"
+                    value={recurringForm.descricao}
+                    onChange={(e) =>
+                      setRecurringForm((prev) => ({
+                        ...prev,
+                        descricao: e.target.value,
+                      }))
+                    }
+                    placeholder="Descrição"
+                    required
+                    disabled={busy}
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={recurringForm.valor}
+                    onChange={(e) =>
+                      setRecurringForm((prev) => ({
+                        ...prev,
+                        valor: Number(e.target.value),
+                      }))
+                    }
+                    placeholder="Valor"
+                    required
+                    disabled={busy}
+                  />
+                  <Button type="submit" disabled={busy}>
+                    {editingRecurringId ? "Salvar alterações" : "Salvar recorrente"}
+                  </Button>
+                </form>
+                {editingRecurringId && (
+                  <div className="flex flex-wrap">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={cancelRecurringEdit}
+                      disabled={busy}
+                    >
+                      Cancelar edição
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-2 text-sm">
+                  <h4 className="font-semibold">Recorrentes ativos</h4>
+                  <ul className="space-y-2 text-foreground">
+                    {activeRecurring.map((item) => (
+                      <li
+                        className="rounded-md bg-surface px-3 py-2"
+                        key={item.id}
+                      >
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <p className="min-w-0">
+                            {item.tipo} - {item.descricao}: {formatCurrency(item.valor)}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy || !item.id}
+                              onClick={() => startRecurringEdit(item)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-expense hover:bg-expense-soft"
+                              disabled={busy || !item.id}
+                              onClick={() => void onDeleteRecurring(item)}
+                            >
+                              Excluir
+                            </Button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                    {activeRecurring.length === 0 && (
+                      <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
+                        Nenhuma transacao recorrente registrada.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </Card>
+            )}
+
+            {step === 2 && (
+              <Card className="space-y-3">
+                <h3 className="text-lg">{`3. ${STEPS[2].title}`}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[2].subtitle}</p>
+                <form
+                  className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+                  onSubmit={onCreateBudget}
+                >
+                  <Select
+                    value={budgetForm.categoria_id}
+                    onChange={(e) =>
+                      setBudgetForm((prev) => ({
+                        ...prev,
+                        categoria_id: Number(e.target.value),
+                      }))
+                    }
+                    required
+                  >
+                    <option value={0}>Categoria</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id || 0}>
+                        {category.nome}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={budgetForm.valor_planejado}
+                    onChange={(e) =>
+                      setBudgetForm((prev) => ({
+                        ...prev,
+                        valor_planejado: Number(e.target.value),
+                      }))
+                    }
+                    placeholder="Valor planejado"
+                    required
+                  />
+                  <Button type="submit" disabled={busy}>
+                    Salvar orçamento
+                  </Button>
+                </form>
+
+                <ul className="space-y-2 text-sm text-foreground">
+                  {budgets.map((budget) => (
+                    <li
+                      className="space-y-2 rounded-md bg-surface px-3 py-3"
+                      key={budget.id || `${budget.mes}-${budget.categoria_id}`}
+                    >
+                      <p className="text-muted-foreground">
+                        Categoria:{" "}
+                        {categories.find((c) => c.id === budget.categoria_id)?.nome ||
+                          `#${budget.categoria_id}`}
+                      </p>
+                      {editingBudgetId === budget.id ? (
+                        <div className="space-y-2">
+                          <FormField label="Valor planejado">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editingBudgetValue}
+                              onChange={(e) => setEditingBudgetValue(e.target.value)}
+                              disabled={busy}
+                            />
+                          </FormField>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={busy}
+                              onClick={() => void onUpdateBudget()}
+                            >
+                              Salvar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={cancelBudgetEdit}
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-semibold text-foreground">
+                            {formatCurrency(budget.valor_planejado)}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy || !budget.id}
+                              onClick={() => startBudgetEdit(budget)}
+                            >
+                              Editar
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="text-expense hover:bg-expense-soft"
+                              disabled={busy || !budget.id}
+                              onClick={() => void onDeleteBudget(budget)}
+                            >
+                              Excluir
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                  {budgets.length === 0 && (
+                    <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
+                      Nenhum orçamento cadastrado para este mês.
+                    </li>
+                  )}
+                </ul>
+              </Card>
+            )}
+
+            {step === 3 && (
+              <Card className="space-y-3">
+                <h3 className="text-lg">{`4. ${STEPS[3].title}`}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[3].subtitle}</p>
+                {projection ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-md bg-surface px-3 py-2">
+                        <p className="text-muted-foreground">Receita prevista</p>
+                        <p className="font-semibold text-income">
+                          {formatCurrency(projection.income)}
+                        </p>
+                      </div>
+                      <div className="rounded-md bg-surface px-3 py-2">
+                        <p className="text-muted-foreground">
+                          Despesas já lançadas (informativo)
+                        </p>
+                        <p className="font-semibold text-expense">
+                          {formatCurrency(projection.expenses_logged)}
+                        </p>
+                      </div>
+                      <div className="rounded-md bg-surface px-3 py-2">
+                        <p className="text-muted-foreground">Despesas fixas</p>
+                        <p className="font-semibold text-expense">
+                          {formatCurrency(projection.fixed_expenses)}
+                        </p>
+                      </div>
+                      <div className="rounded-md bg-surface px-3 py-2">
+                        <p className="text-muted-foreground">Orcamentos variaveis</p>
+                        <p className="font-semibold text-warning">
+                          {formatCurrency(projection.planned_variable)}
+                        </p>
+                      </div>
+                      <div className="rounded-md bg-surface px-3 py-2 md:col-span-2 xl:col-span-4">
+                        <p className="text-muted-foreground">Saldo projetado</p>
+                        <p className={`font-semibold ${projectionTone}`}>
+                          {formatCurrency(projection.projected_balance)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sem projeção disponível.</p>
+                )}
+              </Card>
+            )}
+
+            {step === 4 && (
+              <Card className="space-y-3">
+                <h3 className="text-lg">{`5. ${STEPS[4].title}`}</h3>
+                <p className="text-sm text-muted-foreground">{STEPS[4].subtitle}</p>
+                <div className="rounded-full bg-surface px-3 py-2 text-sm">
+                  Status atual: <strong>{getMonthStatusLabel(status)}</strong>
+                </div>
+                <Button
+                  onClick={onCreateSnapshot}
+                  disabled={busy || status === "COMPLETED"}
+                >
+                  <CheckIcon className="mr-2 h-5 w-5" />
+                  Confirmar planejamento e criar snapshot
+                </Button>
+                <TransactionSheet
+                  open={confirmSheetOpen}
+                  onOpenChange={setConfirmSheetOpen}
+                  title="Confirmar saldo não positivo"
+                  description="Seu saldo projetado está negativo ou zerado. Confirme apenas se quiser concluir o planejamento."
+                >
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Este mês será fechado com saldo projetado não positivo.
+                      Confirme apenas se deseja realmente concluir o planejamento.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={busy}
+                        onClick={() => void createSnapshotWithGuard(true)}
+                      >
+                        {busy ? "Confirmando..." : "Confirmar mesmo assim"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => setConfirmSheetOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </TransactionSheet>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Snapshots do mês</h4>
+                  <ul className="space-y-2 text-sm text-foreground">
+                    {snapshots.map((snapshot) => (
+                      <li
+                        className="rounded-md bg-surface px-3 py-2"
+                        key={snapshot.id}
+                      >
+                        {formatMonthLabel(snapshot.mes)}: saldo projetado {formatCurrency(snapshot.saldo_projetado)}
+                      </li>
+                    ))}
+                    {snapshots.length === 0 && (
+                      <li className="rounded-md bg-surface px-3 py-2 text-muted-foreground">
+                        Nenhum snapshot criado para este mês.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </Card>
+            )}
+
+            <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                className={`w-full sm:w-auto ${!canGoPrev ? "cursor-not-allowed border-border bg-muted text-muted-foreground hover:bg-muted" : ""}`}
+                disabled={!canGoPrev}
+                onClick={() => setStep((prev) => prev - 1)}
+              >
+                Voltar
+              </Button>
+              <p className="text-center text-xs font-semibold text-muted-foreground sm:text-left">
+                {STEPS[step].shortLabel}
+              </p>
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                disabled={!canGoNext && status === "COMPLETED"}
+                onClick={
+                  step < STEPS.length - 1
+                    ? () => setStep((prev) => prev + 1)
+                    : () => onCreateSnapshot()
+                }
+              >
+                {step === STEPS.length - 1 ? (
+                  <>
+                    <CheckIcon className="mr-2 h-5 w-5" />
+                    Salvar planejamento
+                  </>
+                ) : (
+                  "Próximo"
+                )}
+              </Button>
+            </Card>
+          </>
+        )}
       </section>
     </PlanningLayout>
   );
